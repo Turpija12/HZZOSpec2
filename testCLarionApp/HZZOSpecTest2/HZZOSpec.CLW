@@ -1063,3 +1063,19 @@ nLen     LONG
     RETURN TRUE
   END
   RETURN FALSE
+
+!============================================================================
+! DateToStr - Pretvori Clarion LONG datum u string format DD.MM.YYYY
+!============================================================================
+HZZOSpecClass.DateToStr PROCEDURE(LONG pDate)
+sDD   STRING(2)
+sMM   STRING(2)
+sYYYY STRING(4)
+  CODE
+  IF NOT pDate
+    RETURN '00.00.0000'
+  END
+  sDD   = FORMAT(DAY(pDate),   @N02)
+  sMM   = FORMAT(MONTH(pDate), @N02)
+  sYYYY = FORMAT(YEAR(pDate),  @N04)
+  RETURN sDD & '.' & sMM & '.' & sYYYY

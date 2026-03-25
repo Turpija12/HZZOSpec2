@@ -90,6 +90,7 @@ Export                    PROCEDURE(STRING pFileName),BOOL ! TRUE=uspjeh
 GenerateFileName          PROCEDURE(STRING pSifraPodSluzbe,STRING pSifraIsporucitelja,|
                             LONG pRedniBroj,LONG pGodina),STRING
 GetErrorCount             PROCEDURE(),LONG
+DateToStr                 PROCEDURE(LONG pDate),STRING
 
 ! --- Privatne metode ---
 ValidateRacun             PROCEDURE(LONG pRacunPtr),BOOL,PRIVATE

@@ -73,6 +73,7 @@ Validate() -> BOOL                              ! TRUE=sve ispravno, FALSE=gresk
 Export(STRING pFileName) -> BOOL                 ! Validira + pise datoteku
 GenerateFileName(STRING, STRING, LONG, LONG) -> STRING  ! Generira naziv prema spec
 GetErrorCount() -> LONG                         ! Broj gresaka u ErrorQ
+DateToStr(LONG pDate) -> STRING                  ! Clarion datum -> 'DD.MM.YYYY' (0 -> '00.00.0000')
 ```
 
 ### Pristup queue-ovima

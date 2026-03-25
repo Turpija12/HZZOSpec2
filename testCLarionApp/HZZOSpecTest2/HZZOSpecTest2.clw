@@ -40,7 +40,14 @@ hLogFile LONG(0)                      ! Handle log datoteke
   LogWrite('============================================================')
 
   ! --- Primjer 1: Ispravni podaci ---
+  ! --- Demonstracija DateToStr metode ---
+  LogWrite('--- DateToStr demonstracija ---')
+  LogWrite('  Datum danas (TODAY()): ' & Spec.DateToStr(TODAY()))
+  LogWrite('  DATE(1,2,2023) -> ocekivano 02.01.2023: ' & Spec.DateToStr(DATE(1,2,2023)))
+  LogWrite('  DATE(12,31,2025) -> ocekivano 31.12.2025: ' & Spec.DateToStr(DATE(12,31,2025)))
+  LogWrite('  pDate=0 -> ocekivano 00.00.0000: ' & Spec.DateToStr(0))
   LogWrite('')
+
   LogWrite('--- TEST 1: Ispravni podaci ---')
   PrimjerIspravniPodaci()
 
@@ -71,20 +78,23 @@ Spec       HZZOSpecClass
 sFileName  STRING(30)
 sFullPath  STRING(260)
 bResult    BOOL
+dDatum     LONG                          ! Clarion datum (koristimo DateToStr za formatiranje)
   CODE
   LogWrite('  Spec.Init()')
   Spec.Init()
 
   !--- Punjenje racuna (vodeci slog 60) ---
+  dDatum = DATE(1, 2, 2023)             ! Clarion datum: 2. sijecnja 2023.
   LogWrite('  Punjenje racuna (slog 60)...')
+  LogWrite('  DateToStr(DATE(1,2,2023)) = ' & Spec.DateToStr(dDatum))
   CLEAR(Spec.RacunQ)
   Spec.RacunQ.RacunIndex          = 1
   Spec.RacunQ.SifraIsporucitelja  = '200326791'
   Spec.RacunQ.NazivIsporucitelja  = 'Ustanova 1'
   Spec.RacunQ.BrojOvjerenePotvrde = ''
-  Spec.RacunQ.DatumObracuna       = '02.01.2023'
+  Spec.RacunQ.DatumObracuna       = Spec.DateToStr(dDatum)
   Spec.RacunQ.VrstaPomagala       = '7'
-  Spec.RacunQ.DatumNarudzbe       = '02.01.2023'
+  Spec.RacunQ.DatumNarudzbe       = Spec.DateToStr(dDatum)
   Spec.RacunQ.BrojRacDopunsko     = '25/2023-D'
   Spec.RacunQ.BrojPolice          = '10042090'
   Spec.RacunQ.UkIznosPomagala     = '17.77'
@@ -106,7 +116,7 @@ bResult    BOOL
   Spec.RacunQ.AktivnostDopunsko   = '11201'
   Spec.RacunQ.BrojPotvrdeDoktora  = ''
   Spec.RacunQ.IdentifikatorEPotvrde = '7773017bf16f2155b-xebe68d184545c21027cf1'
-  Spec.RacunQ.DatumIzdavanja      = '02.01.2023'
+  Spec.RacunQ.DatumIzdavanja      = Spec.DateToStr(dDatum)
   Spec.RacunQ.UkIznosRazCijene    = '0.00'
   Spec.RacunQ.OIB                 = ''
   Spec.RacunQ.Valuta              = 'EUR'
@@ -118,7 +128,7 @@ bResult    BOOL
   CLEAR(Spec.StavkaQ)
   Spec.StavkaQ.RacunIndex          = 1
   Spec.StavkaQ.BrojOvjerenePotvrde = ''
-  Spec.StavkaQ.DatumObracuna       = '02.01.2023'
+  Spec.StavkaQ.DatumObracuna       = Spec.DateToStr(dDatum)
   Spec.StavkaQ.SifraPomagala       = '0324120807006'
   Spec.StavkaQ.Kolicina            = '50.00'
   Spec.StavkaQ.UkupniIznos         = '15.12'
@@ -136,7 +146,7 @@ bResult    BOOL
   CLEAR(Spec.StavkaQ)
   Spec.StavkaQ.RacunIndex          = 1
   Spec.StavkaQ.BrojOvjerenePotvrde = ''
-  Spec.StavkaQ.DatumObracuna       = '02.01.2023'
+  Spec.StavkaQ.DatumObracuna       = Spec.DateToStr(dDatum)
   Spec.StavkaQ.SifraPomagala       = '0321120808003'
   Spec.StavkaQ.Kolicina            = '50.00'
   Spec.StavkaQ.UkupniIznos         = '2.65'
@@ -188,20 +198,27 @@ Spec       HZZOSpecClass
 sFileName  STRING(30)
 sFullPath  STRING(260)
 bResult    BOOL
+dDatum1    LONG                          ! datum racuna 1: 05.01.2023
+dDatum2    LONG                          ! datum racuna 2: 06.01.2023
+dDatum3    LONG                          ! datum racuna 3: 07.01.2023
   CODE
+  dDatum1 = DATE(1, 5, 2023)
+  dDatum2 = DATE(1, 6, 2023)
+  dDatum3 = DATE(1, 7, 2023)
   LogWrite('  Spec.Init()')
   Spec.Init()
 
   !=== RACUN 1: Pacijent s MBO, secerna bolest (vrsta 7) ===
   LogWrite('  Punjenje racuna 1 (MBO, vrsta=7, secerna bolest)...')
+  LogWrite('  DateToStr(dDatum1) = ' & Spec.DateToStr(dDatum1))
   CLEAR(Spec.RacunQ)
   Spec.RacunQ.RacunIndex            = 1
   Spec.RacunQ.SifraIsporucitelja    = '200326791'
   Spec.RacunQ.NazivIsporucitelja    = 'Ljekarna Centar d.o.o.'
   Spec.RacunQ.BrojOvjerenePotvrde   = ''
-  Spec.RacunQ.DatumObracuna         = '05.01.2023'
+  Spec.RacunQ.DatumObracuna         = Spec.DateToStr(dDatum1)
   Spec.RacunQ.VrstaPomagala         = '7'
-  Spec.RacunQ.DatumNarudzbe         = '04.01.2023'
+  Spec.RacunQ.DatumNarudzbe         = Spec.DateToStr(DATE(1, 4, 2023))
   Spec.RacunQ.BrojRacDopunsko       = ''
   Spec.RacunQ.BrojPolice            = ''
   Spec.RacunQ.UkIznosPomagala       = '22.50'
@@ -223,7 +240,7 @@ bResult    BOOL
   Spec.RacunQ.AktivnostDopunsko     = ''
   Spec.RacunQ.BrojPotvrdeDoktora    = ''
   Spec.RacunQ.IdentifikatorEPotvrde = '7773017bf16f2155b-aaa11111111111111111'
-  Spec.RacunQ.DatumIzdavanja        = '05.01.2023'
+  Spec.RacunQ.DatumIzdavanja        = Spec.DateToStr(dDatum1)
   Spec.RacunQ.UkIznosRazCijene      = '0.00'
   Spec.RacunQ.OIB                   = ''
   Spec.RacunQ.Valuta                = 'EUR'
@@ -233,7 +250,7 @@ bResult    BOOL
   CLEAR(Spec.StavkaQ)
   Spec.StavkaQ.RacunIndex           = 1
   Spec.StavkaQ.BrojOvjerenePotvrde  = ''
-  Spec.StavkaQ.DatumObracuna        = '05.01.2023'
+  Spec.StavkaQ.DatumObracuna        = Spec.DateToStr(dDatum1)
   Spec.StavkaQ.SifraPomagala        = '0324120807006'
   Spec.StavkaQ.Kolicina             = '100.00'
   Spec.StavkaQ.UkupniIznos          = '15.00'
@@ -249,7 +266,7 @@ bResult    BOOL
   CLEAR(Spec.StavkaQ)
   Spec.StavkaQ.RacunIndex           = 1
   Spec.StavkaQ.BrojOvjerenePotvrde  = ''
-  Spec.StavkaQ.DatumObracuna        = '05.01.2023'
+  Spec.StavkaQ.DatumObracuna        = Spec.DateToStr(dDatum1)
   Spec.StavkaQ.SifraPomagala        = '0321120808003'
   Spec.StavkaQ.Kolicina             = '50.00'
   Spec.StavkaQ.UkupniIznos          = '7.50'
@@ -330,7 +347,7 @@ bResult    BOOL
   Spec.StavkaQ.IdentifikatorEPotvrde  = ''
   Spec.StavkaQ.IznosRazCijene       = '0.00'
   ADD(Spec.StavkaQ)
-  LogWrite('  Racun 2 dodan (2 stavke, OIB=38377323198)')
+  LogWrite('  Racun 2 dodan (2 stavke, OIB=12345678903)')
 
   !=== RACUN 3: Pacijent s MBO, sluh (vrsta 3), 1 stavka ===
   LogWrite('  Punjenje racuna 3 (MBO, vrsta=3, sluh)...')
@@ -384,7 +401,7 @@ bResult    BOOL
   Spec.StavkaQ.IdentifikatorEPotvrde  = '7773017bf16f2155b-ccc33333333333333333'
   Spec.StavkaQ.IznosRazCijene       = '0.00'
   ADD(Spec.StavkaQ)
-  LogWrite('  Racun 3 dodan (1 stavka, MBO=987654323)')
+  LogWrite('  Racun 3 dodan (1 stavka, MBO=987654325)')
 
   !--- Validacija ---
   LogWrite('  Pokretanje Spec.Validate() za 3 racuna / 5 stavki...')
