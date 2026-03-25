@@ -1,0 +1,25 @@
+# Clarion build output
+obj/
+map/
+*.obj
+*.lib
+*.MAP
+*.exe
+*.dll
+*.bpp
+*.shp
+*.EXP
+*.sln.cache
+*.cwproj.FileList.xml
+
+# HZZO export output
+*.O??
+
+# Log files
+*.log
+
+# Build logs
+txt/
+
+# Clarion APP backup
+*.app.bak

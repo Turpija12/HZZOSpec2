@@ -1,0 +1,531 @@
+!============================================================================
+! HZZOSpecTest2.CLW - Primjer koristenja HZZOSpecClass klase
+!
+! Ovaj primjer demonstrira:
+!   1. Inicijalizaciju klase
+!   2. Punjenje racuna (slog 60) i stavki (slog 61) iz podataka
+!   3. Samo validaciju (bez exporta)
+!   4. Export u datoteku prema HZZO specifikaciji
+!   5. Generiranje naziva datoteke
+!   6. Prikaz gresaka iz ErrorQ
+!   7. Primjer s neispravanim podacima (demonstracija gresaka)
+!============================================================================
+  PROGRAM
+
+  INCLUDE('HZZOSpec.INC')
+
+  MAP
+PrimjerIspravniPodaci   PROCEDURE()
+PrimjerNeispravniPodaci PROCEDURE()
+PrimjerViseRacuna       PROCEDURE()
+PrikaziGreske           PROCEDURE(HZZOSpecClass pSpec)
+LogOpen                 PROCEDURE(STRING pFileName)
+LogWrite                PROCEDURE(STRING pMsg)
+LogClose                PROCEDURE()
+    MODULE('Win32')
+      log_CreateFile(*CSTRING,LONG,LONG,LONG,LONG,LONG,LONG),LONG,PASCAL,RAW,NAME('CreateFileA')
+      log_WriteFile(LONG,*STRING,LONG,*LONG,LONG),LONG,PASCAL,RAW,NAME('WriteFile')
+      log_CloseHandle(LONG),LONG,PASCAL,NAME('CloseHandle')
+    END
+  END
+
+Spec     HZZOSpecClass                ! Globalna instanca klase
+I        LONG
+hLogFile LONG(0)                      ! Handle log datoteke
+
+  CODE
+  LogOpen('.\HZZOSpecTest2.log')
+  LogWrite('============================================================')
+  LogWrite('HZZO Spec Test2 - Pocetak')
+  LogWrite('============================================================')
+
+  ! --- Primjer 1: Ispravni podaci ---
+  LogWrite('')
+  LogWrite('--- TEST 1: Ispravni podaci ---')
+  PrimjerIspravniPodaci()
+
+  ! --- Primjer 2: Vise racuna (3 racuna, 5 stavki) ---
+  LogWrite('')
+  LogWrite('--- TEST 2: Vise racuna ---')
+  PrimjerViseRacuna()
+
+  ! --- Primjer 3: Neispravni podaci (demonstracija validacijskih gresaka) ---
+  LogWrite('')
+  LogWrite('--- TEST 3: Neispravni podaci ---')
+  PrimjerNeispravniPodaci()
+
+  LogWrite('')
+  LogWrite('============================================================')
+  LogWrite('HZZO Spec Test2 - Kraj')
+  LogWrite('============================================================')
+  LogClose()
+
+  MESSAGE('Gotovo! Log zapisan u HZZOSpecTest2.log','Kraj')
+
+!============================================================================
+! PrimjerIspravniPodaci - Demonstracija s ispravnim podacima iz specifikacije
+! Podaci preuzeti iz Priloga 7 dokumenta OS_POM_25.docx
+!============================================================================
+PrimjerIspravniPodaci PROCEDURE()
+Spec       HZZOSpecClass
+sFileName  STRING(30)
+sFullPath  STRING(260)
+bResult    BOOL
+  CODE
+  LogWrite('  Spec.Init()')
+  Spec.Init()
+
+  !--- Punjenje racuna (vodeci slog 60) ---
+  LogWrite('  Punjenje racuna (slog 60)...')
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex          = 1
+  Spec.RacunQ.SifraIsporucitelja  = '200326791'
+  Spec.RacunQ.NazivIsporucitelja  = 'Ustanova 1'
+  Spec.RacunQ.BrojOvjerenePotvrde = ''
+  Spec.RacunQ.DatumObracuna       = '02.01.2023'
+  Spec.RacunQ.VrstaPomagala       = '7'
+  Spec.RacunQ.DatumNarudzbe       = '02.01.2023'
+  Spec.RacunQ.BrojRacDopunsko     = '25/2023-D'
+  Spec.RacunQ.BrojPolice          = '10042090'
+  Spec.RacunQ.UkIznosPomagala     = '17.77'
+  Spec.RacunQ.IznosSudjelovanja   = '0.00'
+  Spec.RacunQ.IznosDopunskoSPDV   = '6.62'
+  Spec.RacunQ.IznosPDVDopunsko    = '0.32'
+  Spec.RacunQ.IznosObveznoSPDV    = '11.15'
+  Spec.RacunQ.IznosPDVObvezno     = '0.53'
+  Spec.RacunQ.NeKoristiSe1        = ''
+  Spec.RacunQ.NeKoristiSe2        = ''
+  Spec.RacunQ.MBO                 = '123456782'           ! KZ=2 (ispravna kontrolna znamenka)
+  Spec.RacunQ.BrojBolesnickogLista = ''
+  Spec.RacunQ.Drzava              = ''
+  Spec.RacunQ.SifraProizvodjaca   = ''
+  Spec.RacunQ.UkIznosFaktHZZO     = '0.00'
+  Spec.RacunQ.UkIznosFaktDop      = '0.00'
+  Spec.RacunQ.BrojOsobnogRacuna   = '25/2023'
+  Spec.RacunQ.AktivnostObvezno    = '10055'
+  Spec.RacunQ.AktivnostDopunsko   = '11201'
+  Spec.RacunQ.BrojPotvrdeDoktora  = ''
+  Spec.RacunQ.IdentifikatorEPotvrde = '7773017bf16f2155b-xebe68d184545c21027cf1'
+  Spec.RacunQ.DatumIzdavanja      = '02.01.2023'
+  Spec.RacunQ.UkIznosRazCijene    = '0.00'
+  Spec.RacunQ.OIB                 = ''
+  Spec.RacunQ.Valuta              = 'EUR'
+  ADD(Spec.RacunQ)
+  LogWrite('  Racun dodan. RacunIndex=1, SifraIsporucitelja=200326791')
+
+  !--- Punjenje stavke 1 (slog 61) ---
+  LogWrite('  Punjenje stavke 1 (slog 61)...')
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex          = 1
+  Spec.StavkaQ.BrojOvjerenePotvrde = ''
+  Spec.StavkaQ.DatumObracuna       = '02.01.2023'
+  Spec.StavkaQ.SifraPomagala       = '0324120807006'
+  Spec.StavkaQ.Kolicina            = '50.00'
+  Spec.StavkaQ.UkupniIznos         = '15.12'
+  Spec.StavkaQ.SifraProizvodjaca   = '10250'
+  Spec.StavkaQ.BrojPotvrdeDoktora  = ''
+  Spec.StavkaQ.SifraVelicineObloge = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = ''
+  Spec.StavkaQ.IdentifikatorEPotvrde  = '7773017bf16f2155b-xebe68d184545c21027cf1'
+  Spec.StavkaQ.IznosRazCijene      = '0.00'
+  ADD(Spec.StavkaQ)
+  LogWrite('  Stavka 1 dodana. SifraPomagala=0324120807006')
+
+  !--- Punjenje stavke 2 (slog 61) ---
+  LogWrite('  Punjenje stavke 2 (slog 61)...')
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex          = 1
+  Spec.StavkaQ.BrojOvjerenePotvrde = ''
+  Spec.StavkaQ.DatumObracuna       = '02.01.2023'
+  Spec.StavkaQ.SifraPomagala       = '0321120808003'
+  Spec.StavkaQ.Kolicina            = '50.00'
+  Spec.StavkaQ.UkupniIznos         = '2.65'
+  Spec.StavkaQ.SifraProizvodjaca   = '10250'
+  Spec.StavkaQ.BrojPotvrdeDoktora  = ''
+  Spec.StavkaQ.SifraVelicineObloge = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = ''
+  Spec.StavkaQ.IdentifikatorEPotvrde  = '7773017bf16f2155b-xebe68d184545c21027cf1'
+  Spec.StavkaQ.IznosRazCijene      = '0.00'
+  ADD(Spec.StavkaQ)
+  LogWrite('  Stavka 2 dodana. SifraPomagala=0321120808003')
+
+  !--- Samo validacija (bez exporta) ---
+  LogWrite('  Pokretanje Spec.Validate()...')
+  bResult = Spec.Validate()
+  IF bResult
+    LogWrite('  Validacija: USPJESNA (0 gresaka)')
+  ELSE
+    LogWrite('  Validacija: NEUSPJESNA - Broj gresaka: ' & Spec.GetErrorCount())
+    PrikaziGreske(Spec)
+  END
+
+  !--- Generiranje naziva datoteke ---
+  sFileName = Spec.GenerateFileName('060','200326791', 1, 2023)
+  LogWrite('  Generirani naziv datoteke: ' & CLIP(sFileName))
+
+  !--- Export u datoteku ---
+  sFullPath = '.\' & sFileName
+  LogWrite('  Pokretanje Spec.Export(' & CLIP(sFullPath) & ')...')
+  bResult = Spec.Export(sFullPath)
+  IF bResult
+    LogWrite('  Export: USPJESAN -> ' & CLIP(sFullPath))
+  ELSE
+    LogWrite('  Export: NEUSPJESAN - Broj gresaka: ' & Spec.GetErrorCount())
+    PrikaziGreske(Spec)
+  END
+
+  LogWrite('  Spec.Kill()')
+  Spec.Kill()
+
+!============================================================================
+! PrimjerViseRacuna - 3 racuna, 5 stavki ukupno, razliciti pacijenti
+! Racun 1: MBO pacijent, vrsta 7 (secerna bolest), 2 stavke
+! Racun 2: OIB pacijent, vrsta 1 (ortopedska pomagala), 2 stavke
+! Racun 3: MBO pacijent, vrsta 3 (sluh), 1 stavka
+!============================================================================
+PrimjerViseRacuna PROCEDURE()
+Spec       HZZOSpecClass
+sFileName  STRING(30)
+sFullPath  STRING(260)
+bResult    BOOL
+  CODE
+  LogWrite('  Spec.Init()')
+  Spec.Init()
+
+  !=== RACUN 1: Pacijent s MBO, secerna bolest (vrsta 7) ===
+  LogWrite('  Punjenje racuna 1 (MBO, vrsta=7, secerna bolest)...')
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex            = 1
+  Spec.RacunQ.SifraIsporucitelja    = '200326791'
+  Spec.RacunQ.NazivIsporucitelja    = 'Ljekarna Centar d.o.o.'
+  Spec.RacunQ.BrojOvjerenePotvrde   = ''
+  Spec.RacunQ.DatumObracuna         = '05.01.2023'
+  Spec.RacunQ.VrstaPomagala         = '7'
+  Spec.RacunQ.DatumNarudzbe         = '04.01.2023'
+  Spec.RacunQ.BrojRacDopunsko       = ''
+  Spec.RacunQ.BrojPolice            = ''
+  Spec.RacunQ.UkIznosPomagala       = '22.50'
+  Spec.RacunQ.IznosSudjelovanja     = '0.00'
+  Spec.RacunQ.IznosDopunskoSPDV     = '0.00'
+  Spec.RacunQ.IznosPDVDopunsko      = '0.00'
+  Spec.RacunQ.IznosObveznoSPDV      = '22.50'
+  Spec.RacunQ.IznosPDVObvezno       = '1.07'
+  Spec.RacunQ.NeKoristiSe1          = ''
+  Spec.RacunQ.NeKoristiSe2          = ''
+  Spec.RacunQ.MBO                   = '123456782'    ! KZ=2
+  Spec.RacunQ.BrojBolesnickogLista  = ''
+  Spec.RacunQ.Drzava                = ''
+  Spec.RacunQ.SifraProizvodjaca     = ''
+  Spec.RacunQ.UkIznosFaktHZZO       = '0.00'
+  Spec.RacunQ.UkIznosFaktDop        = '0.00'
+  Spec.RacunQ.BrojOsobnogRacuna     = '1/2023'
+  Spec.RacunQ.AktivnostObvezno      = '1005500'
+  Spec.RacunQ.AktivnostDopunsko     = ''
+  Spec.RacunQ.BrojPotvrdeDoktora    = ''
+  Spec.RacunQ.IdentifikatorEPotvrde = '7773017bf16f2155b-aaa11111111111111111'
+  Spec.RacunQ.DatumIzdavanja        = '05.01.2023'
+  Spec.RacunQ.UkIznosRazCijene      = '0.00'
+  Spec.RacunQ.OIB                   = ''
+  Spec.RacunQ.Valuta                = 'EUR'
+  ADD(Spec.RacunQ)
+
+  ! Stavka 1.1
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex           = 1
+  Spec.StavkaQ.BrojOvjerenePotvrde  = ''
+  Spec.StavkaQ.DatumObracuna        = '05.01.2023'
+  Spec.StavkaQ.SifraPomagala        = '0324120807006'
+  Spec.StavkaQ.Kolicina             = '100.00'
+  Spec.StavkaQ.UkupniIznos          = '15.00'
+  Spec.StavkaQ.SifraProizvodjaca    = '10250'
+  Spec.StavkaQ.BrojPotvrdeDoktora   = ''
+  Spec.StavkaQ.SifraVelicineObloge  = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = ''
+  Spec.StavkaQ.IdentifikatorEPotvrde  = '7773017bf16f2155b-aaa11111111111111111'
+  Spec.StavkaQ.IznosRazCijene       = '0.00'
+  ADD(Spec.StavkaQ)
+
+  ! Stavka 1.2
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex           = 1
+  Spec.StavkaQ.BrojOvjerenePotvrde  = ''
+  Spec.StavkaQ.DatumObracuna        = '05.01.2023'
+  Spec.StavkaQ.SifraPomagala        = '0321120808003'
+  Spec.StavkaQ.Kolicina             = '50.00'
+  Spec.StavkaQ.UkupniIznos          = '7.50'
+  Spec.StavkaQ.SifraProizvodjaca    = '10250'
+  Spec.StavkaQ.BrojPotvrdeDoktora   = ''
+  Spec.StavkaQ.SifraVelicineObloge  = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = ''
+  Spec.StavkaQ.IdentifikatorEPotvrde  = '7773017bf16f2155b-aaa11111111111111111'
+  Spec.StavkaQ.IznosRazCijene       = '0.00'
+  ADD(Spec.StavkaQ)
+  LogWrite('  Racun 1 dodan (2 stavke, MBO=123456782)')
+
+  !=== RACUN 2: Pacijent s OIB, ortopedska pomagala (vrsta 1) ===
+  LogWrite('  Punjenje racuna 2 (OIB, vrsta=1, ortopedska pomagala)...')
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex            = 2
+  Spec.RacunQ.SifraIsporucitelja    = '200326791'
+  Spec.RacunQ.NazivIsporucitelja    = 'Ljekarna Centar d.o.o.'
+  Spec.RacunQ.BrojOvjerenePotvrde   = '10/12345678'   ! format: redni/broj
+  Spec.RacunQ.DatumObracuna         = '06.01.2023'
+  Spec.RacunQ.VrstaPomagala         = '1'
+  Spec.RacunQ.DatumNarudzbe         = '03.01.2023'
+  Spec.RacunQ.BrojRacDopunsko       = '26/2023-D'
+  Spec.RacunQ.BrojPolice            = '20051234'
+  Spec.RacunQ.UkIznosPomagala       = '350.00'
+  Spec.RacunQ.IznosSudjelovanja     = '50.00'
+  Spec.RacunQ.IznosDopunskoSPDV     = '50.00'
+  Spec.RacunQ.IznosPDVDopunsko      = '2.38'
+  Spec.RacunQ.IznosObveznoSPDV      = '300.00'
+  Spec.RacunQ.IznosPDVObvezno       = '14.29'
+  Spec.RacunQ.NeKoristiSe1          = ''
+  Spec.RacunQ.NeKoristiSe2          = ''
+  Spec.RacunQ.MBO                   = ''
+  Spec.RacunQ.BrojBolesnickogLista  = ''
+  Spec.RacunQ.Drzava                = ''
+  Spec.RacunQ.SifraProizvodjaca     = ''
+  Spec.RacunQ.UkIznosFaktHZZO       = '0.00'
+  Spec.RacunQ.UkIznosFaktDop        = '0.00'
+  Spec.RacunQ.BrojOsobnogRacuna     = '26/2023'
+  Spec.RacunQ.AktivnostObvezno      = '1005501'
+  Spec.RacunQ.AktivnostDopunsko     = '11201'
+  Spec.RacunQ.BrojPotvrdeDoktora    = ''
+  Spec.RacunQ.IdentifikatorEPotvrde = ''
+  Spec.RacunQ.DatumIzdavanja        = '06.01.2023'
+  Spec.RacunQ.UkIznosRazCijene      = '0.00'
+  Spec.RacunQ.OIB                   = '12345678903'    ! OIB s ispravnom KZ=3
+  Spec.RacunQ.Valuta                = 'EUR'
+  ADD(Spec.RacunQ)
+
+  ! Stavka 2.1
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex           = 2
+  Spec.StavkaQ.BrojOvjerenePotvrde  = '10/12345678'
+  Spec.StavkaQ.DatumObracuna        = '06.01.2023'
+  Spec.StavkaQ.SifraPomagala        = '0110011'        ! 7-znamenkasta sifra
+  Spec.StavkaQ.Kolicina             = '1.00'
+  Spec.StavkaQ.UkupniIznos          = '200.00'
+  Spec.StavkaQ.SifraProizvodjaca    = ''
+  Spec.StavkaQ.BrojPotvrdeDoktora   = ''
+  Spec.StavkaQ.SifraVelicineObloge  = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = 'Proteza lijeva noga'
+  Spec.StavkaQ.IdentifikatorEPotvrde  = ''
+  Spec.StavkaQ.IznosRazCijene       = '0.00'
+  ADD(Spec.StavkaQ)
+
+  ! Stavka 2.2
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex           = 2
+  Spec.StavkaQ.BrojOvjerenePotvrde  = '10/12345678'
+  Spec.StavkaQ.DatumObracuna        = '06.01.2023'
+  Spec.StavkaQ.SifraPomagala        = '0110012'        ! 7-znamenkasta sifra
+  Spec.StavkaQ.Kolicina             = '1.00'
+  Spec.StavkaQ.UkupniIznos          = '150.00'
+  Spec.StavkaQ.SifraProizvodjaca    = ''
+  Spec.StavkaQ.BrojPotvrdeDoktora   = ''
+  Spec.StavkaQ.SifraVelicineObloge  = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = 'Stopalo lijevo'
+  Spec.StavkaQ.IdentifikatorEPotvrde  = ''
+  Spec.StavkaQ.IznosRazCijene       = '0.00'
+  ADD(Spec.StavkaQ)
+  LogWrite('  Racun 2 dodan (2 stavke, OIB=38377323198)')
+
+  !=== RACUN 3: Pacijent s MBO, sluh (vrsta 3), 1 stavka ===
+  LogWrite('  Punjenje racuna 3 (MBO, vrsta=3, sluh)...')
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex            = 3
+  Spec.RacunQ.SifraIsporucitelja    = '200326791'
+  Spec.RacunQ.NazivIsporucitelja    = 'Ljekarna Centar d.o.o.'
+  Spec.RacunQ.BrojOvjerenePotvrde   = ''
+  Spec.RacunQ.DatumObracuna         = '07.01.2023'
+  Spec.RacunQ.VrstaPomagala         = '3'
+  Spec.RacunQ.DatumNarudzbe         = '07.01.2023'
+  Spec.RacunQ.BrojRacDopunsko       = ''
+  Spec.RacunQ.BrojPolice            = ''
+  Spec.RacunQ.UkIznosPomagala       = '1200.00'
+  Spec.RacunQ.IznosSudjelovanja     = '0.00'
+  Spec.RacunQ.IznosDopunskoSPDV     = '0.00'
+  Spec.RacunQ.IznosPDVDopunsko      = '0.00'
+  Spec.RacunQ.IznosObveznoSPDV      = '1200.00'
+  Spec.RacunQ.IznosPDVObvezno       = '57.14'
+  Spec.RacunQ.NeKoristiSe1          = ''
+  Spec.RacunQ.NeKoristiSe2          = ''
+  Spec.RacunQ.MBO                   = '987654325'    ! KZ=5
+  Spec.RacunQ.BrojBolesnickogLista  = ''
+  Spec.RacunQ.Drzava                = ''
+  Spec.RacunQ.SifraProizvodjaca     = ''
+  Spec.RacunQ.UkIznosFaktHZZO       = '0.00'
+  Spec.RacunQ.UkIznosFaktDop        = '0.00'
+  Spec.RacunQ.BrojOsobnogRacuna     = '27/2023'
+  Spec.RacunQ.AktivnostObvezno      = '1005502'
+  Spec.RacunQ.AktivnostDopunsko     = ''
+  Spec.RacunQ.BrojPotvrdeDoktora    = ''
+  Spec.RacunQ.IdentifikatorEPotvrde = '7773017bf16f2155b-ccc33333333333333333'
+  Spec.RacunQ.DatumIzdavanja        = '07.01.2023'
+  Spec.RacunQ.UkIznosRazCijene      = '0.00'
+  Spec.RacunQ.OIB                   = ''
+  Spec.RacunQ.Valuta                = 'EUR'
+  ADD(Spec.RacunQ)
+
+  ! Stavka 3.1
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex           = 3
+  Spec.StavkaQ.BrojOvjerenePotvrde  = ''
+  Spec.StavkaQ.DatumObracuna        = '07.01.2023'
+  Spec.StavkaQ.SifraPomagala        = '052001010001'   ! 12-znamenkasta sifra
+  Spec.StavkaQ.Kolicina             = '1.00'
+  Spec.StavkaQ.UkupniIznos          = '1200.00'
+  Spec.StavkaQ.SifraProizvodjaca    = '99999'
+  Spec.StavkaQ.BrojPotvrdeDoktora   = ''
+  Spec.StavkaQ.SifraVelicineObloge  = ''
+  Spec.StavkaQ.IdentifikacijaPomagala = 'Slusni aparat BTE'
+  Spec.StavkaQ.IdentifikatorEPotvrde  = '7773017bf16f2155b-ccc33333333333333333'
+  Spec.StavkaQ.IznosRazCijene       = '0.00'
+  ADD(Spec.StavkaQ)
+  LogWrite('  Racun 3 dodan (1 stavka, MBO=987654323)')
+
+  !--- Validacija ---
+  LogWrite('  Pokretanje Spec.Validate() za 3 racuna / 5 stavki...')
+  bResult = Spec.Validate()
+  IF bResult
+    LogWrite('  Validacija: USPJESNA (0 gresaka)')
+  ELSE
+    LogWrite('  Validacija: NEUSPJESNA - Broj gresaka: ' & Spec.GetErrorCount())
+    PrikaziGreske(Spec)
+  END
+
+  !--- Export ---
+  sFileName = Spec.GenerateFileName('060','200326791', 2, 2023)
+  sFullPath = '.\' & sFileName
+  LogWrite('  Export: ' & CLIP(sFullPath))
+  bResult = Spec.Export(sFullPath)
+  IF bResult
+    LogWrite('  Export: USPJESAN -> ' & CLIP(sFullPath))
+  ELSE
+    LogWrite('  Export: NEUSPJESAN - Broj gresaka: ' & Spec.GetErrorCount())
+    PrikaziGreske(Spec)
+  END
+
+  LogWrite('  Spec.Kill()')
+  Spec.Kill()
+
+!============================================================================
+! PrimjerNeispravniPodaci - Demonstracija validacijskih gresaka
+!============================================================================
+PrimjerNeispravniPodaci PROCEDURE()
+Spec    HZZOSpecClass
+bResult BOOL
+  CODE
+  LogWrite('  Spec.Init()')
+  Spec.Init()
+
+  !--- Racun s namjernim greskama ---
+  LogWrite('  Punjenje racuna s NAMJERNIM GRESKAMA...')
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex          = 1
+  Spec.RacunQ.SifraIsporucitelja  = '123456780'        ! Kriva kontrolna znamenka!
+  Spec.RacunQ.NazivIsporucitelja  = ''                  ! Prazan - obavezan!
+  Spec.RacunQ.DatumObracuna       = '31.13.2023'        ! Neispravan datum (mjesec 13)!
+  Spec.RacunQ.VrstaPomagala       = '6'                 ! Nedozvoljena vrsta!
+  Spec.RacunQ.DatumNarudzbe       = '15.01.2023'
+  Spec.RacunQ.UkIznosPomagala     = '17.77'
+  Spec.RacunQ.IznosSudjelovanja   = 'abc'               ! Neispravan iznos!
+  Spec.RacunQ.IznosObveznoSPDV    = '11.15'
+  Spec.RacunQ.IznosPDVObvezno     = '0.53'
+  Spec.RacunQ.MBO                 = ''                  ! Nema MBO, OIB ni INO!
+  Spec.RacunQ.OIB                 = ''
+  Spec.RacunQ.UkIznosFaktHZZO     = '0.00'
+  Spec.RacunQ.BrojOsobnogRacuna   = '25/2023'
+  Spec.RacunQ.AktivnostObvezno    = '10055'
+  Spec.RacunQ.DatumIzdavanja      = '02.01.2023'
+  Spec.RacunQ.Valuta              = 'USD'               ! Kriva valuta!
+  ADD(Spec.RacunQ)
+
+  !--- Stavka s greskama ---
+  LogWrite('  Punjenje stavke s NAMJERNIM GRESKAMA...')
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex         = 1
+  Spec.StavkaQ.DatumObracuna      = '02.01.2023'
+  Spec.StavkaQ.SifraPomagala      = '123'               ! Kriva duljina sifre!
+  Spec.StavkaQ.Kolicina           = '50'                ! Nema decimala!
+  Spec.StavkaQ.UkupniIznos        = '15.12'
+  ADD(Spec.StavkaQ)
+
+  !--- Validacija - ocekujemo greske ---
+  LogWrite('  Pokretanje Spec.Validate() - ocekujemo greske...')
+  bResult = Spec.Validate()
+  LogWrite('  Validacija zavrsena. Broj gresaka: ' & Spec.GetErrorCount())
+  PrikaziGreske(Spec)
+
+  LogWrite('  Spec.Kill()')
+  Spec.Kill()
+
+!============================================================================
+! PrikaziGreske - Ispisuje sve greske iz ErrorQ u log i MESSAGE
+!============================================================================
+PrikaziGreske PROCEDURE(HZZOSpecClass pSpec)
+I      LONG
+sMsg   STRING(2000)
+sLine  STRING(300)
+  CODE
+  sMsg = 'Popis gresaka:' & '<13,10>' & '<13,10>'
+  LogWrite('  --- Popis gresaka (' & RECORDS(pSpec.ErrorQ) & ') ---')
+  LOOP I = 1 TO RECORDS(pSpec.ErrorQ)
+    GET(pSpec.ErrorQ, I)
+    sLine = 'Slog ' & CLIP(pSpec.ErrorQ.TipSloga)      |
+      & ' | Racun:'  & pSpec.ErrorQ.RacunIndex          |
+      & ' | Stavka:' & pSpec.ErrorQ.StavkaIndex         |
+      & ' | Polje '  & pSpec.ErrorQ.RedniBrPolja        |
+      & ' ('         & CLIP(pSpec.ErrorQ.NazivPolja) & ')' |
+      & ' -> '       & CLIP(pSpec.ErrorQ.Poruka)
+    LogWrite('  [' & I & '] ' & CLIP(sLine))
+    sMsg = CLIP(sMsg)                                  |
+      & 'Slog ' & CLIP(pSpec.ErrorQ.TipSloga)          |
+      & ' | Racun:' & pSpec.ErrorQ.RacunIndex           |
+      & ' | Stavka:' & pSpec.ErrorQ.StavkaIndex         |
+      & ' | Polje ' & pSpec.ErrorQ.RedniBrPolja         |
+      & ' (' & CLIP(pSpec.ErrorQ.NazivPolja) & ')'      |
+      & '<13,10>'                                       |
+      & '  -> ' & CLIP(pSpec.ErrorQ.Poruka)             |
+      & '<13,10>'
+    IF LEN(CLIP(sMsg)) > 1500
+      sMsg = CLIP(sMsg) & '... (jos ' & (RECORDS(pSpec.ErrorQ) - I) & ' gresaka)'
+      BREAK
+    END
+  END
+  LogWrite('  --- Kraj popisa gresaka ---')
+  MESSAGE(sMsg,'Greske validacije')
+
+!============================================================================
+! LogOpen - Otvori log datoteku za pisanje
+!============================================================================
+LogOpen PROCEDURE(STRING pFileName)
+csName  CSTRING(261)
+  CODE
+  csName   = CLIP(pFileName)
+  hLogFile = log_CreateFile(csName, 40000000h, 0, 0, 2, 080h, 0)
+
+!============================================================================
+! LogWrite - Zapisi liniju u log datoteku
+!============================================================================
+LogWrite PROCEDURE(STRING pMsg)
+sData    STRING(2002)
+nLen     LONG
+nWritten LONG
+  CODE
+  IF hLogFile = 0 OR hLogFile = -1 THEN RETURN.
+  sData = CLIP(pMsg) & '<13,10>'
+  nLen  = LEN(CLIP(pMsg)) + 2
+  log_WriteFile(hLogFile, sData, nLen, nWritten, 0)
+
+!============================================================================
+! LogClose - Zatvori log datoteku
+!============================================================================
+LogClose PROCEDURE()
+  CODE
+  IF hLogFile <> 0 AND hLogFile <> -1
+    log_CloseHandle(hLogFile)
+  END
+  hLogFile = 0
