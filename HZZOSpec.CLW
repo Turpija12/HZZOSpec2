@@ -1079,3 +1079,457 @@ sYYYY STRING(4)
   sMM   = FORMAT(MONTH(pDate), @N02)
   sYYYY = FORMAT(YEAR(pDate),  @N04)
   RETURN sDD & '.' & sMM & '.' & sYYYY
+
+!============================================================================
+! HZZOSpecClass.Report
+!
+! Generira PDF racun za osnovno ili dopunsko zdravstveno osiguranje.
+!
+! Parametri:
+!   pRacunIndex  LONG    RacunIndex zapisa u SELF.RacunQ koji se ispisuje
+!   pVrsta       BYTE    1 = osnovno zdravstveno osiguranje
+!                        2 = dopunsko zdravstveno osiguranje
+!   pPdfPath     STRING  putanja do izlazne PDF datoteke ('' = print preview)
+!
+! Preduvjeti:
+!   - SELF.RacunQ i SELF.StavkaQ moraju biti popunjeni
+!   - Report-only polja: SifraMaloprodajneLokacije, AdresaIsporucitelja,
+!     ZiroRacun, MaticniBroj, OIBIsporucitelja, PozivNaBroj, MjestoIzdavanja,
+!     HZZOPodrucniUred, HZZOMjesto, HZZOUlicaBroj, HZZOOIB (u RacunQ)
+!   - NazivPomagala, JedCijenaEur, StopaPDV, JedRazlikaEur (u StavkaQ)
+!
+! Razlika OS vs DOP:
+!   Osnovno  (pVrsta=1) - 5 financijskih redaka, sakrivena 'Br. police' labela
+!   Dopunsko (pVrsta=2) - 6 financijskih redaka, vidljiva polica,
+!                         f5='5. Iznos na teret dopunskog...',
+!                         f6='6. Iznos PDV-a u tocki 5.'
+!
+! PDF generiranje (Clarion 11):
+!   SYSTEM{PROP:PrintMode} = 3 zahtijeva instaliran PDF driver.
+!   Za print preview: proslijedi pPdfPath = '' (prazno).
+!============================================================================
+HZZOSpecClass.Report PROCEDURE(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)
+
+!--- Header varijable ---
+l:RacunZa           STRING(80)
+l:RacunBroj         STRING(60)
+l:Oib               STRING(40)
+l:PodrucniUred      STRING(80)
+l:HZZOMjesto        STRING(60)
+l:HZZOUlicaBroj     STRING(60)
+l:SifraMalLok       STRING(10)
+l:Naziv_Isp         STRING(80)
+l:Adresa_Isp        STRING(80)
+l:Ziro              STRING(50)
+l:BrojPotvrde       STRING(110)
+l:BrojPolice        STRING(50)
+l:MaticniBrojOib    STRING(30)
+l:MBOPacijenta      STRING(30)
+l:PozivNaBroj       STRING(30)
+
+!--- Tablica stavki ---
+l:Br                LONG
+l:Sifra             STRING(13)
+l:NazivS            STRING(100)
+l:Kolicina          DECIMAL(7,2)
+l:JedCijena         DECIMAL(14,4)
+l:StopaPDVa         DECIMAL(5,2)
+l:Iznos             DECIMAL(11,2)
+l:JedRazlika        DECIMAL(15,4)
+l:UkRazlika         DECIMAL(11,2)
+l:UkupnoIznos       DECIMAL(11,2)
+l:UkupnoRazlika     DECIMAL(11,2)
+
+!--- PDV tablica (max 2 stope) ---
+l:Stopa1            STRING(5)
+l:Osnovica1         DECIMAL(11,2)
+l:PDVIznos1         DECIMAL(11,2)
+l:Stopa2            STRING(5)
+l:Osnovica2         DECIMAL(11,2)
+l:PDVIznos2         DECIMAL(11,2)
+l:StopaDec          DECIMAL(5,2)
+l:OsnovicaI         DECIMAL(11,4)
+l:PDVIznosI         DECIMAL(11,4)
+
+!--- Financijski zbroji ---
+l:UkIznosPomagala   DECIMAL(11,2)
+l:IznosSudjelovanja DECIMAL(11,2)
+l:IznosObvezno      DECIMAL(11,2)
+l:IznosRazlike      DECIMAL(11,2)
+l:IznosPDV5         DECIMAL(11,2)
+l:f6_Iznos          DECIMAL(11,2)
+
+!--- Labele financijskog sazetka ---
+l:f1                STRING(80)
+l:f2                STRING(80)
+l:f3                STRING(80)
+l:f4                STRING(80)
+l:f5                STRING(80)
+l:f6                STRING(80)
+
+!--- Datumi ---
+l:DatumNarudzbeStr  STRING(60)
+l:DatumIzdavanjaStr STRING(60)
+l:MjestoIDatum      STRING(90)
+
+!--- Iterator ---
+ii#                 LONG
+
+Report              REPORT,AT(11,115,189,149),PRE(RPT),|
+                      PAPER(PAPER:A4),|
+                      FONT('Arial',10,,FONT:regular,CHARSET:EASTEUROPE),MM
+
+                      HEADER,AT(11,12,189,103),USE(?Header)
+                        LINE,AT(0,0,189,0),USE(?HdrTop)
+                        LINE,AT(0,103,189,0),USE(?HdrBot)
+                        LINE,AT(0,0,0,103),USE(?HdrLeft)
+                        LINE,AT(189,0,0,103),USE(?HdrRight)
+                        STRING('Hrvatski zavod za zdravstveno osiguranje'),|
+                          AT(26,7,68,5),USE(?HZZONaslov),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE)
+                        STRING(@s40),AT(26,14,63,5),USE(l:Oib),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s80),AT(26,20,63,5),USE(l:PodrucniUred),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s60),AT(26,26,63,5),USE(l:HZZOMjesto),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s60),AT(26,32,63,5),USE(l:HZZOUlicaBroj),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        LINE,AT(0,40,189,0),USE(?HdrSep)
+                        STRING(@s60),AT(111,1,76,5),USE(l:RacunBroj),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE),RIGHT(2)
+                        TEXT,AT(130,8,56,15),USE(l:RacunZa),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING('I. IZDAVANJE POMAGALA, DIJELA POMAGALA'),|
+                          AT(2,45,84,5),USE(?SekcijaI),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE)
+                        STRING('(Ispunjava ugovorni isporucitelj)'),|
+                          AT(87,45,42,5),USE(?SekcijaISub),|
+                          FONT(,8,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING('Sifra maloprodajne lokacije:'),|
+                          AT(2,55,44,5),USE(?LblSifraLok),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s10),AT(47,55,53,5),USE(l:SifraMalLok),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE)
+                        STRING('Naziv:'),AT(2,64,15,5),USE(?LblNaziv),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s80),AT(19,64,60,5),USE(l:Naziv_Isp),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE)
+                        STRING('Adresa (mjesto, ulica i broj):'),|
+                          AT(2,73,46,5),USE(?LblAdresa),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        TEXT,AT(47,73,66,12),USE(l:Adresa_Isp),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE)
+                        STRING('Broj ziro-racun:'),|
+                          AT(2,88,27,5),USE(?LblZiro),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s50),AT(30,88,77,5),USE(l:Ziro),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE)
+                        STRING('Broj potvrde / racuna:'),|
+                          AT(133,45,35,5),USE(?LblBrojPotvrde),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s110),AT(71,51,115,5),USE(l:BrojPotvrde),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE),RIGHT(2)
+                        STRING('Br. police dop. zdr. osig. HZZO'),|
+                          AT(133,59,52,5),USE(?SDOP),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s50),AT(133,65,51,5),USE(l:BrojPolice),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE),CENTER
+                        STRING('Maticni broj i OIB isporucitelja:'),|
+                          AT(133,73,52,5),USE(?LblMaticni),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s30),AT(133,79,52,5),USE(l:MaticniBrojOib),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE),CENTER
+                        STRING(@s30),AT(133,85,52,4),USE(l:MBOPacijenta),|
+                          FONT(,9,,FONT:regular,CHARSET:EASTEUROPE),CENTER
+                        STRING('Poziv na broj:'),|
+                          AT(148,91,26,5),USE(?LblPoziv),|
+                          FONT(,,,FONT:regular,CHARSET:EASTEUROPE)
+                        STRING(@s30),AT(133,97,52,5),USE(l:PozivNaBroj),|
+                          FONT(,,,FONT:bold,CHARSET:EASTEUROPE),CENTER
+                      END  !HEADER
+
+detailh               DETAIL,AT(0,0,189,10),USE(?DETAILH)
+                        LINE,AT(0,0,189,0),USE(?DHTop)
+                        LINE,AT(0,10,189,0),USE(?DHBot)
+                        LINE,AT(0,0,0,10),USE(?DHLeft)
+                        LINE,AT(189,0,0,10),USE(?DHRight)
+                        LINE,AT(8,0,0,10),USE(?DHCol1)
+                        LINE,AT(38,0,0,10),USE(?DHCol2)
+                        LINE,AT(80,0,0,10),USE(?DHCol3)
+                        LINE,AT(93,0,0,10),USE(?DHCol4)
+                        LINE,AT(113,0,0,10),USE(?DHCol5)
+                        LINE,AT(127,0,0,10),USE(?DHCol6)
+                        LINE,AT(150,0,0,10),USE(?DHCol7)
+                        LINE,AT(168,0,0,10),USE(?DHCol8)
+                        STRING('R.'),AT(1,1,5,4),USE(?DHRbr1),FONT(,8,,,239)
+                        STRING('br.'),AT(1,5,5,4),USE(?DHRbr2),FONT(,8,,,239)
+                        STRING('Sifra pomagala'),AT(10,2,24,6),USE(?DHSifra),|
+                          FONT(,8,,,239),CENTER
+                        STRING('Naziv pomagala'),AT(40,2,26,6),USE(?DHNaziv),|
+                          FONT(,8,,,239)
+                        STRING('Kolicina'),AT(81,2,11,4),USE(?DHKolicina),|
+                          FONT(,8,,,CHARSET:EASTEUROPE)
+                        STRING('Jedinicna cijena'),AT(94,1,18,2),USE(?DHCijena1),|
+                          FONT(,6,,,239),CENTER
+                        STRING('u EUR s PDV-om'),AT(94,5,18,2),USE(?DHCijena2),|
+                          FONT(,6,,,239),CENTER
+                        STRING('Stopa'),AT(115,1,11,3),USE(?DHStopa1),|
+                          FONT(,8,,,239)
+                        STRING('PDV-a'),AT(115,5,11,3),USE(?DHStopa2),|
+                          FONT(,8,,,239)
+                        STRING('Ukupni iznos'),AT(128,1,21,4),USE(?DHUkupni1),|
+                          FONT(,8,,,239)
+                        STRING('u EUR s PDV-om'),AT(128,5,21,4),USE(?DHUkupni2),|
+                          FONT(,7,,,239),CENTER
+                        STRING('Jedinicna '),AT(152,1,12,2),USE(?DHJedRazl1),|
+                          FONT(,6,,,CHARSET:EASTEUROPE)
+                        STRING('razlika u cijeni'),AT(151,3,15,2),USE(?DHJedRazl2),|
+                          FONT(,6,,,239)
+                        STRING('u EUR s PDV-om'),AT(151,6,15,2),USE(?DHJedRazl3),|
+                          FONT(,6,,,239)
+                        STRING('Ukupni iznos'),AT(169,1,19,2),USE(?DHUkRazl1),|
+                          FONT(,6,,,239),CENTER
+                        STRING('razlike u EUR'),AT(169,4,19,2),USE(?DHUkRazl2),|
+                          FONT(,6,,,239),CENTER
+                        STRING('s PDV-om'),AT(169,7,19,2),USE(?DHUkRazl3),|
+                          FONT(,6,,,239),CENTER
+                      END  !detailh
+
+Detail                DETAIL,AT(0,0,189,10),USE(?Detail)
+                        STRING(@n-14),AT(1,2,6,5),USE(l:Br),RIGHT
+                        STRING(@s13),AT(9,2,29,5),USE(l:Sifra),CENTER
+                        TEXT,AT(39,1,37,9),USE(l:NazivS),FONT(,8)
+                        STRING(@n-14.2),AT(75,2,16,5),USE(l:Kolicina),RIGHT
+                        STRING(@n-13.4),AT(92,2,20,5),USE(l:JedCijena),RIGHT
+                        STRING(@n5.2),AT(115,2,10,5),USE(l:StopaPDVa),RIGHT
+                        STRING(@n-13.2),AT(127,2,20,5),USE(l:Iznos),RIGHT
+                        STRING(@n-15.4),AT(147,2,20,5),USE(l:JedRazlika),RIGHT
+                        STRING(@n-14.2),AT(168,2,19,5),USE(l:UkRazlika),RIGHT
+                      END  !Detail
+
+detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
+                        LINE,AT(0,0,189,0),USE(?DFTop)
+                        BOX,AT(98,0,91,7),USE(?UkupnoBox),|
+                          COLOR(COLOR:Black),FILL(COLOR:White),LINEWIDTH(0)
+                        STRING('UKUPNO:'),AT(103,1,20,4),USE(?UkupnoLbl),|
+                          FONT(,,,FONT:bold)
+                        STRING(@n-14.2),AT(121,1,28,4),USE(l:UkupnoIznos),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@n-15.2),AT(158,1,28,4),USE(l:UkupnoRazlika),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@s80),AT(64,10,89,5),USE(l:f1),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s80),AT(64,17,89,5),USE(l:f2),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s80),AT(64,24,89,5),USE(l:f3),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s80),AT(64,30,89,5),USE(l:f4),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s80),AT(64,37,89,5),USE(l:f5),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s80),AT(64,42,89,5),USE(l:f6),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@n-19.2),AT(159,10,28,5),USE(l:UkIznosPomagala),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@n-19.2),AT(159,17,28,5),USE(l:IznosSudjelovanja),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@n-19.2),AT(159,24,28,5),USE(l:IznosObvezno),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@n-15.2),AT(159,30,28,5),USE(l:IznosRazlike),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@n-19.2),AT(159,37,28,5),USE(l:IznosPDV5),|
+                          FONT(,,,FONT:bold),RIGHT
+                        STRING(@n-15.2),AT(159,42,28,5),USE(l:f6_Iznos),|
+                          FONT(,,,FONT:bold),RIGHT
+                        BOX,AT(0,9,63,24),USE(?PDVBox),|
+                          COLOR(COLOR:Black),FILL(COLOR:White),LINEWIDTH(0)
+                        LINE,AT(0,16,62,0),USE(?PDVSep)
+                        STRING('Stopa %'),AT(2,10,18,4),USE(?PDVLblStopa)
+                        STRING('Osnovica'),AT(22,10,18,4),USE(?PDVLblOsn)
+                        STRING('Iznos'),AT(46,10,12,4),USE(?PDVLblIznos)
+                        STRING(@s5),AT(2,18,12,5),USE(l:Stopa1),LEFT
+                        STRING(@n-14.2),AT(16,18,22,5),USE(l:Osnovica1),RIGHT
+                        STRING(@n-13.2),AT(39,18,22,5),USE(l:PDVIznos1),RIGHT
+                        STRING(@s5),AT(2,25,12,5),USE(l:Stopa2),LEFT
+                        STRING(@n-13.2b),AT(16,25,22,5),USE(l:Osnovica2),RIGHT
+                        STRING(@n-13.2b),AT(39,25,22,5),USE(l:PDVIznos2),RIGHT
+                        STRING(@s80),AT(10,47,100,5),USE(l:DatumNarudzbeStr),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s80),AT(10,53,100,5),USE(l:DatumIzdavanjaStr),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        STRING(@s90),AT(10,59,110,5),USE(l:MjestoIDatum),|
+                          FONT(,,,,CHARSET:EASTEUROPE),LEFT
+                        LINE,AT(14,73,51,0),USE(?PotpisL1)
+                        LINE,AT(114,73,59,0),USE(?PotpisL2)
+                        STRING('Potpis odgovorne osobe'),AT(20,75,45,4),|
+                          USE(?LblPotpis1),FONT(,8)
+                        STRING('M.P.'),AT(83,70,12,5),USE(?LblMP),FONT(,8)
+                        STRING('Ime, prezime i potpis odgovorne osobe'),|
+                          AT(114,75,70,4),USE(?LblPotpis2),FONT(,8)
+                      END  !detailF
+
+                      FOOTER,AT(6,264,201,29),USE(?Footer)
+                        LINE,AT(0,0,201,0),USE(?FtrTop)
+                        STRING(@s200),AT(1,4,197,4),USE(l:MjestoIDatum),|
+                          FONT(,8,,,CHARSET:EASTEUROPE),CENTER
+                        STRING('Ovaj racun je izdan na racunalu i punovaljan je bez potpisa i pecata.'),|
+                          AT(10,22,175,4),USE(?FtrLegal),|
+                          FONT(,8,,FONT:bold,CHARSET:EASTEUROPE)
+                      END  !FOOTER
+
+                    END  !Report
+
+                    CODE
+
+                    !--- 1. Dohvati racun iz queue-a po RacunIndex ---
+                    LOOP ii# = 1 TO RECORDS(SELF.RacunQ)
+                      GET(SELF.RacunQ, ii#)
+                      IF SELF.RacunQ.RacunIndex = pRacunIndex THEN BREAK.
+                    END
+                    IF SELF.RacunQ.RacunIndex <> pRacunIndex THEN EXIT.
+
+                    !--- 2. Header varijable ---
+                    IF pVrsta = 1
+                      l:RacunZa   = 'RACUN za obvezno zdravstveno osiguranje'
+                      l:RacunBroj = 'Racun broj: ' & CLIP(SELF.RacunQ.BrojOsobnogRacuna)
+                    ELSE
+                      l:RacunZa   = 'RACUN za dopunsko zdravstveno osiguranje'
+                      IF CLIP(SELF.RacunQ.BrojRacDopunsko) <> ''
+                        l:RacunBroj = 'Racun broj: ' & CLIP(SELF.RacunQ.BrojRacDopunsko)
+                      ELSE
+                        l:RacunBroj = 'Racun broj: ' & CLIP(SELF.RacunQ.BrojOsobnogRacuna)
+                      END
+                    END
+
+                    l:Oib           = 'OIB: '             & CLIP(SELF.RacunQ.HZZOOIB)
+                    l:PodrucniUred  = 'Podrucni ured: '   & CLIP(SELF.RacunQ.HZZOPodrucniUred)
+                    l:HZZOMjesto    = 'Mjesto: '          & CLIP(SELF.RacunQ.HZZOMjesto)
+                    l:HZZOUlicaBroj = 'Ulica i broj: '   & CLIP(SELF.RacunQ.HZZOUlicaBroj)
+                    l:SifraMalLok   = CLIP(SELF.RacunQ.SifraMaloprodajneLokacije)
+                    l:Naziv_Isp     = CLIP(SELF.RacunQ.NazivIsporucitelja)
+                    l:Adresa_Isp    = CLIP(SELF.RacunQ.AdresaIsporucitelja)
+                    l:Ziro          = CLIP(SELF.RacunQ.ZiroRacun)
+                    l:BrojPotvrde   = CLIP(SELF.RacunQ.IdentifikatorEPotvrde)
+                    l:BrojPolice    = CLIP(SELF.RacunQ.BrojPolice)
+                    l:MaticniBrojOib= CLIP(SELF.RacunQ.MaticniBroj) & ' ' & |
+                                      CLIP(SELF.RacunQ.OIBIsporucitelja)
+                    l:MBOPacijenta  = 'MBO Pacijenta: '  & CLIP(SELF.RacunQ.MBO)
+                    l:PozivNaBroj   = CLIP(SELF.RacunQ.PozivNaBroj)
+
+                    !--- 3. Datumi ---
+                    l:DatumNarudzbeStr  = 'Datum narudzbe: ' & |
+                                          CLIP(SELF.RacunQ.DatumNarudzbe)
+                    l:DatumIzdavanjaStr = 'Datum izdavanja pomagala: ' & |
+                                          CLIP(SELF.RacunQ.DatumObracuna)
+                    l:MjestoIDatum      = 'Mjesto i datum izdavanja racuna: ' & |
+                                          CLIP(SELF.RacunQ.MjestoIzdavanja) & ', ' & |
+                                          CLIP(SELF.RacunQ.DatumIzdavanja)
+
+                    !--- 4. Labele financijskog sazetka ---
+                    l:f1 = '1. Ukupan iznos (s PDV-om):'
+                    l:f2 = '2. Iznos sudjelovanja:'
+                    l:f3 = '3. Iznos na teret obveznog zdravstvenog osiguranja:'
+                    l:f4 = '4. Iznos razlike u cijeni'
+                    IF pVrsta = 1
+                      l:f5 = '5. Iznos obracunatog PDV-a u tocki 3.'
+                      l:f6 = ''
+                    ELSE
+                      l:f5 = '5. Iznos na teret dopunskog zdravstvenog osiguranja'
+                      l:f6 = '6. Iznos obracunatog PDV-a u tocki 5.'
+                    END
+
+                    !--- 5. Financijski iznosi iz RacunQ ---
+                    l:UkIznosPomagala   = SELF.RacunQ.UkIznosPomagala
+                    l:IznosSudjelovanja = SELF.RacunQ.IznosSudjelovanja
+                    l:IznosObvezno      = SELF.RacunQ.IznosObveznoSPDV
+                    l:IznosRazlike      = SELF.RacunQ.UkIznosRazCijene
+                    IF pVrsta = 1
+                      l:IznosPDV5 = SELF.RacunQ.IznosPDVObvezno
+                      l:f6_Iznos  = 0
+                    ELSE
+                      l:IznosPDV5 = SELF.RacunQ.IznosDopunskoSPDV
+                      l:f6_Iznos  = SELF.RacunQ.IznosPDVDopunsko
+                    END
+
+                    !--- 6. Otvori report ---
+                    IF CLIP(pPdfPath) <> ''
+                      SYSTEM{PROP:PrintMode} = 3
+                    END
+                    OPEN(Report)
+                    IF CLIP(pPdfPath) <> ''
+                      Report{PROP:OutputFile} = CLIP(pPdfPath)
+                    END
+                    Report{PROP:Extend} = TRUE
+
+                    !--- 7. Sakrij/prikazi elemente ovisno o vrsti ---
+                    IF pVrsta = 1
+                      Report$?SDOP{PROP:Hide}         = TRUE
+                      Report$?l:BrojPolice{PROP:Hide} = TRUE
+                      Report$?l:f6{PROP:Hide}         = TRUE
+                      Report$?l:f6_Iznos{PROP:Hide}   = TRUE
+                    ELSE
+                      Report$?SDOP{PROP:Hide}         = FALSE
+                      Report$?l:BrojPolice{PROP:Hide} = FALSE
+                      Report$?l:f6{PROP:Hide}         = FALSE
+                      Report$?l:f6_Iznos{PROP:Hide}   = FALSE
+                    END
+
+                    !--- 8. Zaglavlje tablice ---
+                    PRINT(RPT:detailh)
+
+                    !--- 9. Petlja kroz stavke ---
+                    l:Br            = 0
+                    l:UkupnoIznos   = 0
+                    l:UkupnoRazlika = 0
+                    CLEAR(l:Stopa1)  ;  CLEAR(l:Stopa2)
+                    l:Osnovica1 = 0  ;  l:PDVIznos1 = 0
+                    l:Osnovica2 = 0  ;  l:PDVIznos2 = 0
+
+                    LOOP ii# = 1 TO RECORDS(SELF.StavkaQ)
+                      GET(SELF.StavkaQ, ii#)
+                      IF SELF.StavkaQ.RacunIndex <> pRacunIndex THEN CYCLE.
+
+                      l:Br         += 1
+                      l:Sifra       = CLIP(SELF.StavkaQ.SifraPomagala)
+                      l:NazivS      = CLIP(SELF.StavkaQ.NazivPomagala)
+                      l:Kolicina    = SELF.StavkaQ.Kolicina
+                      l:JedCijena   = SELF.StavkaQ.JedCijenaEur
+                      l:StopaPDVa   = SELF.StavkaQ.StopaPDV
+                      l:Iznos       = SELF.StavkaQ.UkupniIznos
+                      l:JedRazlika  = SELF.StavkaQ.JedRazlikaEur
+                      IF l:JedRazlika < 0 THEN l:JedRazlika = 0.
+                      l:UkRazlika   = l:JedRazlika * l:Kolicina
+
+                      l:UkupnoIznos   += l:Iznos
+                      l:UkupnoRazlika += l:UkRazlika
+
+                      !--- PDV grupiranje ---
+                      l:StopaDec = l:StopaPDVa
+                      IF l:StopaDec > 0
+                        l:OsnovicaI = l:Iznos / (1 + l:StopaDec / 100)
+                        l:PDVIznosI = l:Iznos - l:OsnovicaI
+                        IF CLIP(l:Stopa1) = ''
+                          l:Stopa1    = CLIP(SELF.StavkaQ.StopaPDV)
+                          l:Osnovica1 += l:OsnovicaI
+                          l:PDVIznos1 += l:PDVIznosI
+                        ELSIF CLIP(SELF.StavkaQ.StopaPDV) = CLIP(l:Stopa1)
+                          l:Osnovica1 += l:OsnovicaI
+                          l:PDVIznos1 += l:PDVIznosI
+                        ELSIF CLIP(l:Stopa2) = ''
+                          l:Stopa2    = CLIP(SELF.StavkaQ.StopaPDV)
+                          l:Osnovica2 += l:OsnovicaI
+                          l:PDVIznos2 += l:PDVIznosI
+                        ELSIF CLIP(SELF.StavkaQ.StopaPDV) = CLIP(l:Stopa2)
+                          l:Osnovica2 += l:OsnovicaI
+                          l:PDVIznos2 += l:PDVIznosI
+                        END
+                      END
+
+                      PRINT(RPT:Detail)
+                    END
+
+                    !--- 10. Footer i kraj ---
+                    PRINT(RPT:detailF)
+                    ENDPAGE(Report)
+                    CLOSE(Report)

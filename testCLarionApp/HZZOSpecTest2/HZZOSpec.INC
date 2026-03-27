@@ -108,6 +108,7 @@ GenerateFileName          PROCEDURE(STRING pSifraPodSluzbe,STRING pSifraIsporuci
                             LONG pRedniBroj,LONG pGodina),STRING
 GetErrorCount             PROCEDURE(),LONG
 DateToStr                 PROCEDURE(LONG pDate),STRING
+Report                    PROCEDURE(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)
 
 ! --- Privatne metode ---
 ValidateRacun             PROCEDURE(LONG pRacunPtr),BOOL,PRIVATE
