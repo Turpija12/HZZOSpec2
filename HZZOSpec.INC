@@ -44,6 +44,18 @@ DatumIzdavanja          STRING(10)            ! Polje 29: DD.MM.YYYY, obavezno
 UkIznosRazCijene        STRING(12)            ! Polje 30: N(max9).N2, nije obavezno
 OIB                     STRING(11)            ! Polje 31: N11, uvjetno*, K ISO7064
 Valuta                  STRING(3)             ! Polje 32: A3, obavezno (EUR)
+! --- Polja za report (nisu u HZZO export formatu - dodana na kraju) ---
+SifraMaloprodajneLokacije STRING(10)          ! Sifra maloprodajne lokacije isporucitelja
+AdresaIsporucitelja       STRING(80)          ! Grad, ulica i broj isporucitelja
+ZiroRacun                 STRING(34)          ! IBAN ziro racun isporucitelja
+MaticniBroj               STRING(8)           ! Maticni broj isporucitelja
+OIBIsporucitelja          STRING(11)          ! OIB isporucitelja
+PozivNaBroj               STRING(22)          ! Poziv na broj placanja
+MjestoIzdavanja           STRING(50)          ! Mjesto izdavanja racuna
+HZZOPodrucniUred          STRING(60)          ! Naziv HZZO PU (npr. 'HZZO PU Sibenik (083)')
+HZZOMjesto                STRING(40)          ! Grad HZZO podrucnog ureda
+HZZOUlicaBroj             STRING(50)          ! Ulica i broj HZZO PU
+HZZOOIB                   STRING(11)          ! OIB HZZO PU (npr. '02958272670')
                         END
 
 !--- Queue tip za stavke racuna (record 61) - 12 polja ---
@@ -60,6 +72,11 @@ SifraVelicineObloge     STRING(4)             ! Polje 9:  N4, uvjetno (obloge)
 IdentifikacijaPomagala  STRING(30)            ! Polje 10: ANS(max 30), nije obavezno
 IdentifikatorEPotvrde   STRING(100)           ! Polje 11: ANS(max 100), uvjetno
 IznosRazCijene          STRING(12)            ! Polje 12: N(max9).N2, nije obavezno
+! --- Polja za report (nisu u HZZO export formatu - dodana na kraju) ---
+NazivPomagala             STRING(100)         ! Naziv pomagala za tablicu u reportu
+JedCijenaEur              STRING(12)          ! Jedinicna cijena EUR s PDV-om (N.NNNN)
+StopaPDV                  STRING(5)           ! Stopa PDV-a (N.NN, npr. '5.00')
+JedRazlikaEur             STRING(12)          ! Jedinicna razlika u cijeni EUR s PDV-om (N.NNNN)
                         END
 
 !--- Queue tip za greske ---
