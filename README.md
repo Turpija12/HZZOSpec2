@@ -8,9 +8,11 @@ Clarion klasa za generiranje datoteka prema HZZO specifikaciji za osobne racune 
 |----------|------|
 | `HZZOSpec.INC` | Definicije queue tipova (RacunQ, StavkaQ, ErrorQ) i deklaracija klase `HZZOSpecClass` |
 | `HZZOSpec.CLW` | Implementacija svih metoda klase |
+| `HZZOReport.CLW` | Demo PROGRAM za generiranje PDF racuna (osnovno i dopunsko osiguranje) |
 | `HZZOSpec_Primjer.CLW` | Referentni primjer koristenja |
 | `testCLarionApp/HZZOSpecTest2/HZZOSpecTest2.clw` | Testna aplikacija: 3 testa (1 racun, vise racuna, neispravni podaci) s file logom |
 | `OS_POM_25.docx` | Izvorni HZZO dokument specifikacije |
+| `primjer/` | Referentni primjeri: slike racuna (OS i DOP), Doznake.pdf, primjer report koda |
 
 ## Struktura podataka
 
@@ -74,6 +76,9 @@ Export(STRING pFileName) -> BOOL                 ! Validira + pise datoteku
 GenerateFileName(STRING, STRING, LONG, LONG) -> STRING  ! Generira naziv prema spec
 GetErrorCount() -> LONG                         ! Broj gresaka u ErrorQ
 DateToStr(LONG pDate) -> STRING                  ! Clarion datum -> 'DD.MM.YYYY' (0 -> '00.00.0000')
+Report(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)  ! Generira PDF racun
+                                                !   pVrsta=1: osnovno ZO, pVrsta=2: dopunsko ZO
+                                                !   pPdfPath='': print preview
 ```
 
 ### Pristup queue-ovima
@@ -84,6 +89,61 @@ Queue-ovi su javni, korisnik ih direktno puni:
 Spec.RacunQ    ! &HZZORacunQType  - racuni
 Spec.StavkaQ   ! &HZZOStavkaQType - stavke
 Spec.ErrorQ    ! &HZZOErrorQType  - greske (readonly - puni klasa)
+```
+
+## PDF report (Spec.Report)
+
+Metoda `Report` generira PDF racun (jednu stranicu A4) za osnovno ili dopunsko zdravstveno osiguranje. Layout odgovara uzorcima u `primjer/RacunZaOsnovnoOsiguranje.jpg` i `primjer/RacunZaDopunskoOsiguranje.jpg`.
+
+### Report-only polja u `HZZORacunQType`
+
+Ova polja nisu dio HZZO export formata (Export/Validate ih ignoriraju) — koriste se isključivo za ispis:
+
+| Polje | Tip | Opis |
+|-------|-----|------|
+| SifraMaloprodajneLokacije | STRING(10) | Sifra mjesta isporuke isporucitelja |
+| AdresaIsporucitelja | STRING(80) | Grad, ulica i broj isporucitelja |
+| ZiroRacun | STRING(34) | IBAN ziro racun isporucitelja |
+| MaticniBroj | STRING(8) | Maticni broj isporucitelja |
+| OIBIsporucitelja | STRING(11) | OIB isporucitelja |
+| PozivNaBroj | STRING(22) | Poziv na broj placanja |
+| MjestoIzdavanja | STRING(50) | Mjesto izdavanja racuna |
+| HZZOPodrucniUred | STRING(60) | Naziv HZZO podrucnog ureda (npr. 'HZZO PU Sibenik (083)') |
+| HZZOMjesto | STRING(40) | Grad HZZO podrucnog ureda |
+| HZZOUlicaBroj | STRING(50) | Ulica i broj HZZO PU |
+| HZZOOIB | STRING(11) | OIB HZZO PU |
+
+### Report-only polja u `HZZOStavkaQType`
+
+| Polje | Tip | Opis |
+|-------|-----|------|
+| NazivPomagala | STRING(100) | Naziv pomagala za tablicu u reportu |
+| JedCijenaEur | STRING(12) | Jedinicna cijena EUR s PDV-om (N.NNNN) |
+| StopaPDV | STRING(5) | Stopa PDV-a (N.NN, npr. '5.00' ili '25.00') |
+| JedRazlikaEur | STRING(12) | Jedinicna razlika u cijeni EUR s PDV-om (N.NNNN) |
+
+### Razlika OS vs DOP
+
+- **pVrsta=1** (osnovno): 5 financijskih redaka, sakrivena "Br. police" labela
+- **pVrsta=2** (dopunsko): 6 financijskih redaka, vidljiva polica, redak 5 = "Iznos na teret dopunskog ZO", redak 6 = "Iznos PDV-a u tocki 5."
+
+### PDF generiranje
+
+```clarion
+! Pripremi report-only polja
+Spec.RacunQ.NazivIsporucitelja = 'Moja ljekarna'
+Spec.RacunQ.AdresaIsporucitelja = 'Zagreb, Ilica 1'
+Spec.RacunQ.ZiroRacun          = 'HR1234567890123456789'
+! ... ostala polja ...
+Spec.StavkaQ.NazivPomagala     = 'Naziv pomagala'
+Spec.StavkaQ.JedCijenaEur      = '10.5000'
+Spec.StavkaQ.StopaPDV          = '5.00'
+Spec.StavkaQ.JedRazlikaEur     = '0.0000'
+
+! Generiraj PDF
+Spec.Report(1, 1, 'racun_osnovno.pdf')   ! osnovno ZO
+Spec.Report(1, 2, 'racun_dopunsko.pdf')  ! dopunsko ZO
+Spec.Report(1, 1, '')                    ! print preview
 ```
 
 ## Validacije
