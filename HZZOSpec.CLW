@@ -1175,7 +1175,7 @@ l:MjestoIDatum      STRING(90)
 !--- Iterator ---
 ii#                 LONG
 
-Report              REPORT,AT(11,115,189,149),PRE(RPT),|
+RacunRpt            REPORT,AT(11,115,189,149),PRE(RPT),|
                       PAPER(PAPER:A4),|
                       FONT('Arial',10,,FONT:regular,CHARSET:EASTEUROPE),MM
 
@@ -1378,7 +1378,7 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                           FONT(,8,,FONT:bold,CHARSET:EASTEUROPE)
                       END  !FOOTER
 
-                    END  !Report
+                    END  !RacunRpt
 
                     CODE
 
@@ -1456,23 +1456,23 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                     IF CLIP(pPdfPath) <> ''
                       SYSTEM{PROP:PrintMode} = 3
                     END
-                    OPEN(Report)
+                    OPEN(RacunRpt)
                     IF CLIP(pPdfPath) <> ''
-                      Report{PROP:OutputFile} = CLIP(pPdfPath)
+                      RacunRpt{PROP:OutputFile} = CLIP(pPdfPath)
                     END
-                    Report{PROP:Extend} = TRUE
+                    RacunRpt{PROP:Extend} = TRUE
 
                     !--- 7. Sakrij/prikazi elemente ovisno o vrsti ---
                     IF pVrsta = 1
-                      Report$?SDOP{PROP:Hide}         = TRUE
-                      Report$?l:BrojPolice{PROP:Hide} = TRUE
-                      Report$?l:f6{PROP:Hide}         = TRUE
-                      Report$?l:f6_Iznos{PROP:Hide}   = TRUE
+                      RacunRpt$?SDOP{PROP:Hide}         = TRUE
+                      RacunRpt$?l:BrojPolice{PROP:Hide} = TRUE
+                      RacunRpt$?l:f6{PROP:Hide}         = TRUE
+                      RacunRpt$?l:f6_Iznos{PROP:Hide}   = TRUE
                     ELSE
-                      Report$?SDOP{PROP:Hide}         = FALSE
-                      Report$?l:BrojPolice{PROP:Hide} = FALSE
-                      Report$?l:f6{PROP:Hide}         = FALSE
-                      Report$?l:f6_Iznos{PROP:Hide}   = FALSE
+                      RacunRpt$?SDOP{PROP:Hide}         = FALSE
+                      RacunRpt$?l:BrojPolice{PROP:Hide} = FALSE
+                      RacunRpt$?l:f6{PROP:Hide}         = FALSE
+                      RacunRpt$?l:f6_Iznos{PROP:Hide}   = FALSE
                     END
 
                     !--- 8. Zaglavlje tablice ---
@@ -1531,5 +1531,5 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
 
                     !--- 10. Footer i kraj ---
                     PRINT(RPT:detailF)
-                    ENDPAGE(Report)
-                    CLOSE(Report)
+                    ENDPAGE(RacunRpt)
+                    CLOSE(RacunRpt)
