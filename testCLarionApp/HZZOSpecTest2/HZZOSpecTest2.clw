@@ -18,6 +18,7 @@
 PrimjerIspravniPodaci   PROCEDURE()
 PrimjerNeispravniPodaci PROCEDURE()
 PrimjerViseRacuna       PROCEDURE()
+PrimjerReport           PROCEDURE()
 PrikaziGreske           PROCEDURE(HZZOSpecClass pSpec)
 LogOpen                 PROCEDURE(STRING pFileName)
 LogWrite                PROCEDURE(STRING pMsg)
@@ -60,6 +61,11 @@ hLogFile LONG(0)                      ! Handle log datoteke
   LogWrite('')
   LogWrite('--- TEST 3: Neispravni podaci ---')
   PrimjerNeispravniPodaci()
+
+  ! --- Primjer 4: Generiranje PDF racuna (osnovno i dopunsko ZO) ---
+  LogWrite('')
+  LogWrite('--- TEST 4: Report - PDF racun ---')
+  PrimjerReport()
 
   LogWrite('')
   LogWrite('============================================================')
@@ -475,6 +481,84 @@ bResult BOOL
   bResult = Spec.Validate()
   LogWrite('  Validacija zavrsena. Broj gresaka: ' & Spec.GetErrorCount())
   PrikaziGreske(Spec)
+
+  LogWrite('  Spec.Kill()')
+  Spec.Kill()
+
+!============================================================================
+! PrimjerReport - Generiranje PDF racuna za osnovno i dopunsko ZO
+! Koristi iste demo podatke kao HZZOReport.CLW
+! Generira: .\racun_osnovno.pdf i .\racun_dopunsko.pdf
+!============================================================================
+PrimjerReport PROCEDURE()
+Spec       HZZOSpecClass
+  CODE
+  LogWrite('  Spec.Init()')
+  Spec.Init()
+
+  !--- RacunQ: HZZO spec polja ---
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex              = 1
+  Spec.RacunQ.SifraIsporucitelja      = '200326791'
+  Spec.RacunQ.NazivIsporucitelja      = 'Karl Dietz Kijevo d.o.o.'
+  Spec.RacunQ.DatumObracuna           = '09.01.2026'
+  Spec.RacunQ.VrstaPomagala           = '1'
+  Spec.RacunQ.DatumNarudzbe           = '05.01.2026'
+  Spec.RacunQ.BrojRacDopunsko         = '7059'
+  Spec.RacunQ.BrojPolice              = '10010474'
+  Spec.RacunQ.UkIznosPomagala         = '244.71'
+  Spec.RacunQ.IznosSudjelovanja       = '48.94'
+  Spec.RacunQ.IznosDopunskoSPDV       = '48.94'
+  Spec.RacunQ.IznosPDVDopunsko        = '2.33'
+  Spec.RacunQ.IznosObveznoSPDV        = '195.77'
+  Spec.RacunQ.IznosPDVObvezno         = '9.32'
+  Spec.RacunQ.MBO                     = '108656533'
+  Spec.RacunQ.UkIznosFaktHZZO         = '195.77'
+  Spec.RacunQ.UkIznosFaktDop          = '48.94'
+  Spec.RacunQ.BrojOsobnogRacuna       = '7006'
+  Spec.RacunQ.AktivnostObvezno        = '0200100'
+  Spec.RacunQ.IdentifikatorEPotvrde   = '36e415e8-3e3c-435c-912b-077f0a0afd86'
+  Spec.RacunQ.DatumIzdavanja          = '09.01.2026'
+  Spec.RacunQ.UkIznosRazCijene        = '0.00'
+  Spec.RacunQ.Valuta                  = 'EUR'
+  ! Report-only polja:
+  Spec.RacunQ.SifraMaloprodajneLokacije = '500154120'
+  Spec.RacunQ.AdresaIsporucitelja       = 'Knin Sinjska cesta 6a'
+  Spec.RacunQ.ZiroRacun                 = 'HR0223600001102278846'
+  Spec.RacunQ.MaticniBroj               = '01220845'
+  Spec.RacunQ.OIBIsporucitelja          = '87198948864'
+  Spec.RacunQ.PozivNaBroj               = '40002-2026'
+  Spec.RacunQ.MjestoIzdavanja           = 'Knin'
+  Spec.RacunQ.HZZOPodrucniUred          = 'HZZO PU Sibenik (083)'
+  Spec.RacunQ.HZZOMjesto                = 'Sibenik'
+  Spec.RacunQ.HZZOUlicaBroj             = 'Fra. Jerolima Milete 12'
+  Spec.RacunQ.HZZOOIB                   = '02958272670'
+  ADD(Spec.RacunQ)
+
+  !--- StavkaQ ---
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex     = 1
+  Spec.StavkaQ.DatumObracuna  = '09.01.2026'
+  Spec.StavkaQ.SifraPomagala  = '0209031126005'
+  Spec.StavkaQ.Kolicina       = '10.00'
+  Spec.StavkaQ.UkupniIznos    = '244.71'
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  ! Report-only polja:
+  Spec.StavkaQ.NazivPomagala  = 'Silikonska obloga za rane s dodatkom srebra iznad 75'
+  Spec.StavkaQ.JedCijenaEur   = '23.3056'
+  Spec.StavkaQ.StopaPDV       = '5.00'
+  Spec.StavkaQ.JedRazlikaEur  = '0.0000'
+  ADD(Spec.StavkaQ)
+
+  !--- Generiraj PDF za osnovno ZO ---
+  LogWrite('  Generiranje racun_osnovno.pdf (pVrsta=1)...')
+  Spec.Report(1, 1, '.\racun_osnovno.pdf')
+  LogWrite('  racun_osnovno.pdf - gotovo')
+
+  !--- Generiraj PDF za dopunsko ZO ---
+  LogWrite('  Generiranje racun_dopunsko.pdf (pVrsta=2)...')
+  Spec.Report(1, 2, '.\racun_dopunsko.pdf')
+  LogWrite('  racun_dopunsko.pdf - gotovo')
 
   LogWrite('  Spec.Kill()')
   Spec.Kill()
