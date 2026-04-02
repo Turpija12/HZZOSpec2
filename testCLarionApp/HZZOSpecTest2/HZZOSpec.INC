@@ -56,6 +56,8 @@ HZZOPodrucniUred          STRING(60)          ! Naziv HZZO PU (npr. 'HZZO PU Sib
 HZZOMjesto                STRING(40)          ! Grad HZZO podrucnog ureda
 HZZOUlicaBroj             STRING(50)          ! Ulica i broj HZZO PU
 HZZOOIB                   STRING(11)          ! OIB HZZO PU (npr. '02958272670')
+! --- Calc-input polja (ulaz za HZZOCalcClass.CalcRacun, nisu u exportu) ---
+TipOsiguranja             STRING(2)           ! 'D1'=ima dopunsko, 'P1'=nema dopunsko, 'P0'=izuzet
                         END
 
 !--- Queue tip za stavke racuna (record 61) - 12 polja ---

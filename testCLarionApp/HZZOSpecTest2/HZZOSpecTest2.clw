@@ -13,12 +13,14 @@
   PROGRAM
 
   INCLUDE('HZZOSpec.INC')
+  INCLUDE('HZZOCalc.INC'),ONCE
 
   MAP
 PrimjerIspravniPodaci   PROCEDURE()
 PrimjerNeispravniPodaci PROCEDURE()
 PrimjerViseRacuna       PROCEDURE()
 PrimjerReport           PROCEDURE()
+PrimjerCalcRacun        PROCEDURE()
 PrikaziGreske           PROCEDURE(HZZOSpecClass pSpec)
 LogOpen                 PROCEDURE(STRING pFileName)
 LogWrite                PROCEDURE(STRING pMsg)
@@ -66,6 +68,11 @@ hLogFile LONG(0)                      ! Handle log datoteke
   LogWrite('')
   LogWrite('--- TEST 4: Report - PDF racun ---')
   PrimjerReport()
+
+  ! --- Primjer 5: Kalkulator iznosa (HZZOCalcClass) ---
+  LogWrite('')
+  LogWrite('--- TEST 5: HZZOCalcClass.CalcRacun ---')
+  PrimjerCalcRacun()
 
   LogWrite('')
   LogWrite('============================================================')
@@ -620,6 +627,185 @@ nWritten LONG
   sData = CLIP(pMsg) & '<13,10>'
   nLen  = LEN(CLIP(pMsg)) + 2
   log_WriteFile(hLogFile, sData, nLen, nWritten, 0)
+
+!============================================================================
+! PrimjerCalcRacun - Verifikacija HZZOCalcClass.CalcRacun
+!
+! Test case iz primjera slike (Karl Dietz, silikonska obloga):
+!   Stavka: 10 kom x 23.3056 EUR/kom bez PDV = 233.06 EUR bez PDV
+!   PDV 5% = 11.65 EUR → ukupno 244.71 EUR s PDV
+!
+! Ocekivani rezultati (P1, bez dopunskog):
+!   UkIznosPomagala   = '244.71'
+!   IznosSudjelovanja = '48.94'   (20% od 244.71)
+!   IznosObveznoSPDV  = '195.77'  (244.71 - 48.94)
+!   IznosPDVObvezno   = '9.32'    (PDV na 195.77 @ 5%)
+!   IznosDopunskoSPDV = ''        (P1 = nema dopunskog)
+!   UkIznosFaktHZZO   = '195.77'
+!
+! Ocekivani rezultati (D1, s dopunskim) - isti racun:
+!   IznosSudjelovanja = '0.00'
+!   IznosDopunskoSPDV = '48.94'
+!   IznosPDVDopunsko  = '2.33'
+!   IznosObveznoSPDV  = '195.77'  (nepromijenjeno)
+!============================================================================
+PrimjerCalcRacun PROCEDURE()
+Calc     HZZOCalcClass
+Spec     HZZOSpecClass
+bOK      BYTE
+  CODE
+  Calc.Init()
+  Spec.Init()
+
+  LogWrite('  Konstante: Min=' & CLIP(FORMAT(Calc.MinParticipacija, @N8.2)) |
+         & ' Max=' & CLIP(FORMAT(Calc.MaxParticipacija, @N8.2)) |
+         & ' Stopa=' & CLIP(FORMAT(Calc.StopaParticipacije * 100, @N6.2)) & '%' |
+         & ' MaxIznosFact=' & CLIP(FORMAT(Calc.MaxIznosFact, @N10.2)))
+
+  ! -----------------------------------------------------------------------
+  ! CASE 1: P1 (bez dopunskog) - primjer iz slike
+  ! -----------------------------------------------------------------------
+  LogWrite('')
+  LogWrite('  [CASE 1] P1 - bez dopunskog, 10x23.3056 EUR bez PDV, 5% PDV')
+
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex          = 1
+  Spec.RacunQ.SifraIsporucitelja  = '200326791'
+  Spec.RacunQ.NazivIsporucitelja  = 'Karl Dietz Kijevo d.o.o.'
+  Spec.RacunQ.DatumObracuna       = '09.01.2026'
+  Spec.RacunQ.VrstaPomagala       = '1'
+  Spec.RacunQ.DatumNarudzbe       = '05.01.2026'
+  Spec.RacunQ.BrojOsobnogRacuna   = '7006'
+  Spec.RacunQ.AktivnostObvezno    = '4002026'
+  Spec.RacunQ.DatumIzdavanja      = '09.01.2026'
+  Spec.RacunQ.Valuta              = 'EUR'
+  Spec.RacunQ.MBO                 = '108656533'
+  Spec.RacunQ.TipOsiguranja       = HZZO:TipP1
+  ADD(Spec.RacunQ)
+
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex     = 1
+  Spec.StavkaQ.DatumObracuna  = '09.01.2026'
+  Spec.StavkaQ.SifraPomagala  = '0209031126005'
+  Spec.StavkaQ.Kolicina       = '10.00'
+  Spec.StavkaQ.UkupniIznos    = '244.71'   ! 10 x 23.3056 x 1.05 = 244.71
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.StopaPDV       = '5.00'
+  ADD(Spec.StavkaQ)
+
+  bOK = Calc.CalcRacun(Spec.RacunQ, Spec.StavkaQ, 1)
+  LogWrite('  CalcRacun vratio: ' & CHOOSE(bOK=1,'1 (OK)','0 (GRESKA)'))
+
+  GET(Spec.RacunQ, 1)
+  LogWrite('  UkIznosPomagala   = ''' & CLIP(Spec.RacunQ.UkIznosPomagala)   & ''' ocekivano: ''244.71''')
+  LogWrite('  IznosSudjelovanja = ''' & CLIP(Spec.RacunQ.IznosSudjelovanja) & ''' ocekivano: ''48.94''')
+  LogWrite('  IznosObveznoSPDV  = ''' & CLIP(Spec.RacunQ.IznosObveznoSPDV)  & ''' ocekivano: ''195.77''')
+  LogWrite('  IznosPDVObvezno   = ''' & CLIP(Spec.RacunQ.IznosPDVObvezno)   & ''' ocekivano: ''9.32''')
+  LogWrite('  IznosDopunskoSPDV = ''' & CLIP(Spec.RacunQ.IznosDopunskoSPDV) & ''' ocekivano: '''' (prazno)')
+  LogWrite('  IznosPDVDopunsko  = ''' & CLIP(Spec.RacunQ.IznosPDVDopunsko)  & ''' ocekivano: '''' (prazno)')
+  LogWrite('  UkIznosFaktHZZO   = ''' & CLIP(Spec.RacunQ.UkIznosFaktHZZO)   & ''' ocekivano: ''195.77''')
+  LogWrite('  UkIznosFaktDop    = ''' & CLIP(Spec.RacunQ.UkIznosFaktDop)     & ''' ocekivano: '''' (prazno)')
+
+  ! -----------------------------------------------------------------------
+  ! CASE 2: D1 (s dopunskim) - isti iznosi, drugi tip
+  ! -----------------------------------------------------------------------
+  LogWrite('')
+  LogWrite('  [CASE 2] D1 - s dopunskim, isti racun')
+
+  Spec.ClearAll()
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex          = 1
+  Spec.RacunQ.SifraIsporucitelja  = '200326791'
+  Spec.RacunQ.NazivIsporucitelja  = 'Karl Dietz Kijevo d.o.o.'
+  Spec.RacunQ.DatumObracuna       = '09.01.2026'
+  Spec.RacunQ.VrstaPomagala       = '1'
+  Spec.RacunQ.DatumNarudzbe       = '05.01.2026'
+  Spec.RacunQ.BrojOsobnogRacuna   = '7059'
+  Spec.RacunQ.BrojRacDopunsko     = '7059-DOP'
+  Spec.RacunQ.BrojPolice          = '87198948'
+  Spec.RacunQ.AktivnostObvezno    = '4002026'
+  Spec.RacunQ.DatumIzdavanja      = '09.01.2026'
+  Spec.RacunQ.Valuta              = 'EUR'
+  Spec.RacunQ.MBO                 = '108656533'
+  Spec.RacunQ.TipOsiguranja       = HZZO:TipD1
+  ADD(Spec.RacunQ)
+
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex     = 1
+  Spec.StavkaQ.DatumObracuna  = '09.01.2026'
+  Spec.StavkaQ.SifraPomagala  = '0209031126005'
+  Spec.StavkaQ.Kolicina       = '10.00'
+  Spec.StavkaQ.UkupniIznos    = '244.71'
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.StopaPDV       = '5.00'
+  ADD(Spec.StavkaQ)
+
+  bOK = Calc.CalcRacun(Spec.RacunQ, Spec.StavkaQ, 1)
+  LogWrite('  CalcRacun vratio: ' & CHOOSE(bOK=1,'1 (OK)','0 (GRESKA)'))
+
+  GET(Spec.RacunQ, 1)
+  LogWrite('  UkIznosPomagala   = ''' & CLIP(Spec.RacunQ.UkIznosPomagala)   & ''' ocekivano: ''244.71''')
+  LogWrite('  IznosSudjelovanja = ''' & CLIP(Spec.RacunQ.IznosSudjelovanja) & ''' ocekivano: ''0.00''')
+  LogWrite('  IznosObveznoSPDV  = ''' & CLIP(Spec.RacunQ.IznosObveznoSPDV)  & ''' ocekivano: ''195.77''')
+  LogWrite('  IznosPDVObvezno   = ''' & CLIP(Spec.RacunQ.IznosPDVObvezno)   & ''' ocekivano: ''9.32''')
+  LogWrite('  IznosDopunskoSPDV = ''' & CLIP(Spec.RacunQ.IznosDopunskoSPDV) & ''' ocekivano: ''48.94''')
+  LogWrite('  IznosPDVDopunsko  = ''' & CLIP(Spec.RacunQ.IznosPDVDopunsko)  & ''' ocekivano: ''2.33''')
+  LogWrite('  UkIznosFaktHZZO   = ''' & CLIP(Spec.RacunQ.UkIznosFaktHZZO)   & ''' ocekivano: ''195.77''')
+  LogWrite('  UkIznosFaktDop    = ''' & CLIP(Spec.RacunQ.UkIznosFaktDop)     & ''' ocekivano: ''48.94''')
+
+  ! -----------------------------------------------------------------------
+  ! CASE 3: Iznos ispod praga (30.00 EUR) → primjenjuje se MinParticipacija
+  ! 30.00 x 20% = 6.00 < 8.83 → participacija = 8.83
+  ! IznosObvezno = 30.00 - 8.83 = 21.17
+  ! -----------------------------------------------------------------------
+  LogWrite('')
+  LogWrite('  [CASE 3] P1 - iznos 30.00 EUR (ispod MinIznosFact=44.15) → min participacija')
+
+  Spec.ClearAll()
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex     = 1
+  Spec.RacunQ.TipOsiguranja  = HZZO:TipP1
+  ADD(Spec.RacunQ)
+
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex    = 1
+  Spec.StavkaQ.UkupniIznos   = '30.00'
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.StopaPDV      = '5.00'
+  ADD(Spec.StavkaQ)
+
+  bOK = Calc.CalcRacun(Spec.RacunQ, Spec.StavkaQ, 1)
+  GET(Spec.RacunQ, 1)
+  LogWrite('  IznosSudjelovanja = ''' & CLIP(Spec.RacunQ.IznosSudjelovanja) & ''' ocekivano: ''8.83''')
+  LogWrite('  IznosObveznoSPDV  = ''' & CLIP(Spec.RacunQ.IznosObveznoSPDV)  & ''' ocekivano: ''21.17''')
+
+  ! -----------------------------------------------------------------------
+  ! CASE 4: P0 (izuzet) → sudjelovanje = 0, obvezno = puna baza
+  ! -----------------------------------------------------------------------
+  LogWrite('')
+  LogWrite('  [CASE 4] P0 - izuzet od sudjelovanja, iznos 244.71')
+
+  Spec.ClearAll()
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex     = 1
+  Spec.RacunQ.TipOsiguranja  = HZZO:TipP0
+  ADD(Spec.RacunQ)
+
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex    = 1
+  Spec.StavkaQ.UkupniIznos   = '244.71'
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.StopaPDV      = '5.00'
+  ADD(Spec.StavkaQ)
+
+  bOK = Calc.CalcRacun(Spec.RacunQ, Spec.StavkaQ, 1)
+  GET(Spec.RacunQ, 1)
+  LogWrite('  IznosSudjelovanja = ''' & CLIP(Spec.RacunQ.IznosSudjelovanja) & ''' ocekivano: ''0.00''')
+  LogWrite('  IznosObveznoSPDV  = ''' & CLIP(Spec.RacunQ.IznosObveznoSPDV)  & ''' ocekivano: ''244.71''')
+  LogWrite('  IznosDopunskoSPDV = ''' & CLIP(Spec.RacunQ.IznosDopunskoSPDV) & ''' ocekivano: '''' (prazno)')
+
+  Calc.Kill()
+  Spec.Kill()
 
 !============================================================================
 ! LogClose - Zatvori log datoteku

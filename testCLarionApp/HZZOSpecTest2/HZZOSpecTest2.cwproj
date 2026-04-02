@@ -25,7 +25,9 @@
   <ItemGroup>
     <Compile Include="HZZOSpecTest2.clw" />
     <Compile Include="HZZOSpec.CLW" />
+    <Compile Include="HZZOCalc.CLW" />
     <None Include="HZZOSpec.INC" />
+    <None Include="HZZOCalc.INC" />
    
   </ItemGroup>
   <Import Project="$(ClarionBinPath)\SoftVelocity.Build.Clarion.targets" />
