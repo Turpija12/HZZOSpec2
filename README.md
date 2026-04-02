@@ -8,9 +8,11 @@ Clarion klasa za generiranje datoteka prema HZZO specifikaciji za osobne racune 
 |----------|------|
 | `HZZOSpec.INC` | Definicije queue tipova (RacunQ, StavkaQ, ErrorQ) i deklaracija klase `HZZOSpecClass` |
 | `HZZOSpec.CLW` | Implementacija svih metoda klase |
+| `HZZOCalc.INC` | Deklaracija klase `HZZOCalcClass` + equateovi `HZZO:TipD1/P1/P0` |
+| `HZZOCalc.CLW` | Implementacija kalkulatora: participacija, HZZO/dopunsko split, PDV raspad |
 | `HZZOReport.CLW` | Demo PROGRAM za generiranje PDF racuna (osnovno i dopunsko osiguranje) |
 | `HZZOSpec_Primjer.CLW` | Referentni primjer koristenja |
-| `testCLarionApp/HZZOSpecTest2/HZZOSpecTest2.clw` | Testna aplikacija: 3 testa (1 racun, vise racuna, neispravni podaci) s file logom |
+| `testCLarionApp/HZZOSpecTest2/HZZOSpecTest2.clw` | Testna aplikacija: 5 testova s file logom |
 | `OS_POM_25.docx` | Izvorni HZZO dokument specifikacije |
 | `primjer/` | Referentni primjeri: slike racuna (OS i DOP), Doznake.pdf, primjer report koda |
 
@@ -89,6 +91,86 @@ Queue-ovi su javni, korisnik ih direktno puni:
 Spec.RacunQ    ! &HZZORacunQType  - racuni
 Spec.StavkaQ   ! &HZZOStavkaQType - stavke
 Spec.ErrorQ    ! &HZZOErrorQType  - greske (readonly - puni klasa)
+```
+
+## Kalkulator iznosa (HZZOCalcClass)
+
+`HZZOCalcClass` automatski izracunava sva financijska polja u `RacunQ` na temelju iznosa stavki i tipa osiguranja pacijenta. Koristi se zajedno s `HZZOSpecClass`.
+
+### Tipovi osiguranja (TipOsiguranja)
+
+| Equate | Vrijednost | Opis |
+|--------|-----------|------|
+| `HZZO:TipD1` | `'D1'` | Ima dopunsko HZZO osiguranje — pacijent placa 0€ |
+| `HZZO:TipP1` | `'P1'` | Nema dopunsko — pacijent placa participaciju |
+| `HZZO:TipP0` | `'P0'` | Izuzet od sudjelovanja (djeca, RVI...) |
+
+### Pravila izracuna
+
+```
+participacija = MAX(8.83, MIN(bazaHZZO × 20%, 530.88))
+
+bazaHZZO = UkIznosPomagala - UkIznosRazCijene
+
+D1: IznosSudjelovanja = 0,            IznosDopunskoSPDV = participacija
+P1: IznosSudjelovanja = participacija, IznosDopunskoSPDV = ''
+P0: IznosSudjelovanja = 0,            IznosDopunskoSPDV = ''
+
+IznosObveznoSPDV = bazaHZZO - participacija   (isti za sve tipove)
+```
+
+PDV raspad: proporcionalni po omjeru `TotalBezPDV / TotalSPDV` — ispravno radi za vise PDV stopa (5% i 25%) na istom racunu.
+
+### Konfigurilne konstante (2025/2026)
+
+| Konstanta | Default | Opis |
+|-----------|---------|------|
+| `MinParticipacija` | 8.83 | = 2% proracunske osnovice |
+| `MaxParticipacija` | 530.88 | = 120.26% proracunske osnovice |
+| `StopaParticipacije` | 0.2000 | 20% — standardna stopa za ortopedska pomagala |
+| `MaxIznosFact` | 2654.40 | = 530.88 × 5 — gornja granica HZZO priznatog troska |
+
+### API HZZOCalcClass
+
+```
+Init()
+Kill()
+SetKonstante(DECIMAL pMin, DECIMAL pMax, DECIMAL pStopa)   ! ako se promijeni proracunska osnovica
+CalcRacun(&HZZORacunQType, &HZZOStavkaQType, LONG pRacunIdx) -> BYTE  ! 1=OK, 0=greska
+```
+
+### Calc-input polja
+
+- `RacunQ.TipOsiguranja STRING(2)` — mora biti postavljeno prije poziva CalcRacun
+- `StavkaQ.StopaPDV STRING(5)` — mora biti postavljeno za svaku stavku (npr. `'5.00'` ili `'25.00'`)
+
+### Primjer koristenja
+
+```clarion
+INCLUDE('HZZOCalc.INC'),ONCE   ! ukljucuje i HZZOSpec.INC automatski
+
+Calc   HZZOCalcClass
+Spec   HZZOSpecClass
+
+  Calc.Init()
+  Spec.Init()
+
+  ! Punimo RacunQ i StavkaQ (stavke s iznosima s PDV)
+  Spec.RacunQ.TipOsiguranja = HZZO:TipP1    ! P1=nema dopunskog
+  ! ... ostala obavezna polja ...
+  ADD(Spec.RacunQ)
+
+  Spec.StavkaQ.UkupniIznos    = '244.71'    ! iznos S PDV-om
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.StopaPDV       = '5.00'
+  ADD(Spec.StavkaQ)
+
+  ! Kalkulator automatski puni sva iznos-polja u RacunQ
+  Calc.CalcRacun(Spec.RacunQ, Spec.StavkaQ, 1)
+
+  ! Sada su postavljeni: UkIznosPomagala=244.71, IznosSudjelovanja=48.94,
+  !                      IznosObveznoSPDV=195.77, IznosPDVObvezno=9.32, itd.
+  Spec.Export('060200326791001.O25')
 ```
 
 ## PDF report (Spec.Report)
