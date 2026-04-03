@@ -32,7 +32,7 @@ HZZOCalcClass.Kill          PROCEDURE()
 ! Postavi prilagodene konstante (npr. kada se promijeni proracunska osnovica)
 ! MaxIznosFact se izracuna automatski: pMax / pStopa
 !============================================================
-HZZOCalcClass.SetKonstante  PROCEDURE(DECIMAL pMin, DECIMAL pMax, DECIMAL pStopa)
+HZZOCalcClass.SetKonstante  PROCEDURE(REAL pMin, REAL pMax, REAL pStopa)
   CODE
   IF pMin > 0   THEN SELF.MinParticipacija   = pMin.
   IF pMax > 0   THEN SELF.MaxParticipacija   = pMax.
@@ -46,7 +46,7 @@ HZZOCalcClass.SetKonstante  PROCEDURE(DECIMAL pMin, DECIMAL pMax, DECIMAL pStopa
 ! DECIMAL -> STRING N.NN bez vodecih razmaka (npr. 244.71 -> '244.71')
 ! Koristi: FORMAT(@N14.2) pa trazi prvu ne-space poziciju
 !============================================================
-HZZOCalcClass.FormatAmount  PROCEDURE(DECIMAL pVal),STRING
+HZZOCalcClass.FormatAmount  PROCEDURE(REAL pVal)
 l:s  STRING(14)
 l:i  LONG
   CODE
@@ -63,7 +63,7 @@ l:i  LONG
 ! Kao FormatAmount, ali za uvjetna polja: vraca '' kada je vrijednost 0
 ! (HZZO spec: uvjetna polja trebaju biti prazna, ne '0.00')
 !============================================================
-HZZOCalcClass.FormatAmountCond PROCEDURE(DECIMAL pVal),STRING
+HZZOCalcClass.FormatAmountCond PROCEDURE(REAL pVal)
   CODE
   IF pVal = 0 THEN RETURN ''.
   RETURN SELF.FormatAmount(pVal)
@@ -93,10 +93,10 @@ HZZOCalcClass.FormatAmountCond PROCEDURE(DECIMAL pVal),STRING
 ! Vraca: 1=OK, 0=greska (racun nije nadjen, nevaljan tip, StopaPDV=0)
 !============================================================
 HZZOCalcClass.CalcRacun     PROCEDURE(                  |
-                              &HZZORacunQType  pRacQ,   |
-                              &HZZOStavkaQType pStavQ,  |
+                              *HZZORacunQType  pRacQ,   |
+                              *HZZOStavkaQType pStavQ,  |
                               LONG             pRacunIdx|
-                            ),BYTE
+                            )
 
 TotalSPDV       DECIMAL(14,2)   ! ukupni iznos S PDV (sve stavke)
 TotalBezPDV     DECIMAL(14,2)   ! ukupni iznos BEZ PDV (za PDV omjer)

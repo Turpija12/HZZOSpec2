@@ -100,6 +100,29 @@ Ne smije imati `PROGRAM` — samo `MEMBER()` na vrhu.
 - BrojPotvrdeDoktora: mod 11 (14 znamenki), težine 7,6,5,4,3,2,7,6,5,4,3,2,7
 - OIB: ISO 7064 MOD 11,10
 
+### DECIMAL kao parametar — nije podržano
+`DECIMAL(p,s)` se **ne može koristiti kao tip VALUE parametra** u `PROCEDURE` deklaracijama.
+- U `.INC` CLASS deklaraciji i kao lokalne varijable u `.CLW` — OK
+- Kao parametar procedure/metode → koristiti `REAL`
+- Greška: `Invalid data type for value parameter`
+
+### Queue referenca u parametrima procedure
+Za prolaz queue-a by reference u procedure parametrima koristiti `*QueueType`, ne `&QueueType`.
+- `&QueueType` je za deklaraciju reference varijable (van procedure)
+- `*QueueType pQ` je ispravna sintaksa za procedure parametar
+- Greška: `Expected: <ID> ) * < CONST`
+
+### Return type u CLW implementaciji
+U `.CLW` implementaciji metode se **NE ponavlja return type** (`,STRING`, `,BYTE` itd.).
+Return type se deklarira samo jednom — u `.INC` CLASS bloku.
+- Ispravno: `MyClass.GetName PROCEDURE(LONG pId)`
+- Pogrešno: `MyClass.GetName PROCEDURE(LONG pId),STRING`
+- Greška: `Expected: <LINEBREAK> ;`
+
+### PROP:OutputFile nije dostupan
+`REPORT{PROP:OutputFile}` ne postoji u Clarion 11.1EE.
+Za PDF ispis koristiti `SYSTEM{PROP:PrintMode} = 3` prije `OPEN(Report)`.
+
 ### Poznate ispravne test vrijednosti
 - MBO `'123456782'` (KZ=2), MBO `'987654325'` (KZ=5)
 - OIB `'12345678903'` (KZ=3)

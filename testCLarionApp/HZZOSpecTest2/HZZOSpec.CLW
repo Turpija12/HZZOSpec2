@@ -1173,7 +1173,7 @@ l:DatumIzdavanjaStr STRING(60)
 l:MjestoIDatum      STRING(90)
 
 !--- Iterator ---
-ii#                 LONG
+ii                 LONG
 
 RacunRpt            REPORT,AT(11,115,189,149),PRE(RPT),|
                       PAPER(PAPER:A4),|
@@ -1383,11 +1383,11 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                     CODE
 
                     !--- 1. Dohvati racun iz queue-a po RacunIndex ---
-                    LOOP ii# = 1 TO RECORDS(SELF.RacunQ)
-                      GET(SELF.RacunQ, ii#)
+                    LOOP ii = 1 TO RECORDS(SELF.RacunQ)
+                      GET(SELF.RacunQ, ii)
                       IF SELF.RacunQ.RacunIndex = pRacunIndex THEN BREAK.
                     END
-                    IF SELF.RacunQ.RacunIndex <> pRacunIndex THEN EXIT.
+                    IF SELF.RacunQ.RacunIndex <> pRacunIndex THEN RETURN.
 
                     !--- 2. Header varijable ---
                     IF pVrsta = 1
@@ -1458,7 +1458,7 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                     END
                     OPEN(RacunRpt)
                     IF CLIP(pPdfPath) <> ''
-                      RacunRpt{PROP:OutputFile} = CLIP(pPdfPath)
+                      !RacunRpt{PROP:OutputFile} = CLIP(pPdfPath)  ! PROP:OutputFile nije dostupan u ovoj verziji
                     END
                     RacunRpt{PROP:Extend} = TRUE
 
@@ -1486,8 +1486,8 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                     l:Osnovica1 = 0  ;  l:PDVIznos1 = 0
                     l:Osnovica2 = 0  ;  l:PDVIznos2 = 0
 
-                    LOOP ii# = 1 TO RECORDS(SELF.StavkaQ)
-                      GET(SELF.StavkaQ, ii#)
+                    LOOP ii = 1 TO RECORDS(SELF.StavkaQ)
+                      GET(SELF.StavkaQ, ii)
                       IF SELF.StavkaQ.RacunIndex <> pRacunIndex THEN CYCLE.
 
                       l:Br         += 1

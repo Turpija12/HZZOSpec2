@@ -36,15 +36,15 @@ MaxIznosFact        DECIMAL(10,2)   ! max HZZO priznatog troska (default: 2654.4
 ! --- Javne metode ---
 Init            PROCEDURE()
 Kill            PROCEDURE()
-SetKonstante    PROCEDURE(DECIMAL pMin, DECIMAL pMax, DECIMAL pStopa)
+SetKonstante    PROCEDURE(REAL pMin, REAL pMax, REAL pStopa)
                 !   pMin   - novi min participacije (npr. 8.83)
                 !   pMax   - novi max participacije (npr. 530.88)
                 !   pStopa - stopa kao decimala (npr. 0.2000 za 20%)
                 !   MaxIznosFact se izracuna automatski: pMax / pStopa
 
 CalcRacun       PROCEDURE(                  |
-                  &HZZORacunQType  pRacQ,   |
-                  &HZZOStavkaQType pStavQ,  |
+                  *HZZORacunQType  pRacQ,   |
+                  *HZZOStavkaQType pStavQ,  |
                   LONG             pRacunIdx|
                 ),BYTE
                 ! Izracunava sve iznos-polje za navedeni racun.
@@ -55,9 +55,9 @@ CalcRacun       PROCEDURE(                  |
                 ! Vraca: 1=OK, 0=greska
 
 ! --- Privatne metode ---
-FormatAmount    PROCEDURE(DECIMAL pVal),STRING,PRIVATE
-                ! DECIMAL -> STRING N.NN bez vodecih razmaka (npr. '244.71')
-FormatAmountCond PROCEDURE(DECIMAL pVal),STRING,PRIVATE
+FormatAmount    PROCEDURE(REAL pVal),STRING,PRIVATE
+                ! REAL -> STRING N.NN bez vodecih razmaka (npr. '244.71')
+FormatAmountCond PROCEDURE(REAL pVal),STRING,PRIVATE
                 ! Kao FormatAmount, ali vraca '' za vrijednost 0 (za uvjetna polja)
               END
 
