@@ -76,6 +76,7 @@ Spec.ErrorQ.TipSloga             ! '60' ili '61'
 Spec.ErrorQ.RedniBrPolja         ! BYTE
 Spec.ErrorQ.NazivPolja           ! STRING(40)
 Spec.ErrorQ.Poruka               ! STRING(200)
+Spec.ErrorQ.VrijednostPolja      ! STRING(100) - upisana/neispravna vrijednost ('' za cross-field provjere)
 ```
 
 ## Poznati detalji i zamke

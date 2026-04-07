@@ -89,6 +89,7 @@ TipSloga                  STRING(2)           ! '60' ili '61'
 RedniBrPolja              BYTE                ! Redni broj polja iz specifikacije
 NazivPolja                STRING(40)          ! Naziv polja
 Poruka                    STRING(200)         ! Opis greske
+VrijednostPolja           STRING(100)         ! Upisana/neispravna vrijednost
                         END
 
 !============================================================================
@@ -132,7 +133,8 @@ CheckDigitOIB             PROCEDURE(STRING pOIB),BOOL,PRIVATE
 FormatRacunLine           PROCEDURE(LONG pRacunPtr),STRING,PRIVATE
 FormatStavkaLine          PROCEDURE(LONG pStavkaPtr),STRING,PRIVATE
 AddError                  PROCEDURE(LONG pRacunIdx,LONG pStavkaIdx,STRING pTipSloga,|
-                            BYTE pRbrPolja,STRING pNazivPolja,STRING pPoruka),PRIVATE
+                            BYTE pRbrPolja,STRING pNazivPolja,STRING pPoruka,|
+                            STRING pVrijednost),PRIVATE
                         END
 
 _EndOfInclude_

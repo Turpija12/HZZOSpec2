@@ -206,6 +206,8 @@ sLine  STRING(300)
       & ' (' & CLIP(pSpec.ErrorQ.NazivPolja) & ')'       |
       & '<13,10>'                                        |
       & '  -> ' & CLIP(pSpec.ErrorQ.Poruka)              |
+      & CHOOSE(CLIP(pSpec.ErrorQ.VrijednostPolja)<>'', |
+          ' [vrijednost: ''' & CLIP(pSpec.ErrorQ.VrijednostPolja) & ''']', '') |
       & '<13,10>'
     sMsg = CLIP(sMsg) & CLIP(sLine) & '<13,10>'
     ! Izlaz ako je prevelik za prikaz

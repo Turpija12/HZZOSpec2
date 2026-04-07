@@ -64,6 +64,7 @@ Clarion klasa za generiranje datoteka prema HZZO specifikaciji za osobne racune 
 | RedniBrPolja | BYTE | Redni broj polja prema specifikaciji |
 | NazivPolja | STRING(40) | Naziv polja |
 | Poruka | STRING(200) | Opis greske |
+| VrijednostPolja | STRING(100) | Upisana/neispravna vrijednost (prazno za cross-field provjere) |
 
 ## API klase
 

@@ -67,15 +67,17 @@ RetVal LONG(0)
 ! AddError - Dodaje gresku u ErrorQ
 !============================================================================
 HZZOSpecClass.AddError PROCEDURE(LONG pRacunIdx,LONG pStavkaIdx,STRING pTipSloga,|
-                         BYTE pRbrPolja,STRING pNazivPolja,STRING pPoruka)
+                         BYTE pRbrPolja,STRING pNazivPolja,STRING pPoruka,|
+                         STRING pVrijednost)
   CODE
   CLEAR(SELF.ErrorQ)
-  SELF.ErrorQ.RacunIndex   = pRacunIdx
-  SELF.ErrorQ.StavkaIndex  = pStavkaIdx
-  SELF.ErrorQ.TipSloga     = pTipSloga
-  SELF.ErrorQ.RedniBrPolja = pRbrPolja
-  SELF.ErrorQ.NazivPolja   = pNazivPolja
-  SELF.ErrorQ.Poruka       = pPoruka
+  SELF.ErrorQ.RacunIndex      = pRacunIdx
+  SELF.ErrorQ.StavkaIndex     = pStavkaIdx
+  SELF.ErrorQ.TipSloga        = pTipSloga
+  SELF.ErrorQ.RedniBrPolja    = pRbrPolja
+  SELF.ErrorQ.NazivPolja      = pNazivPolja
+  SELF.ErrorQ.Poruka          = pPoruka
+  SELF.ErrorQ.VrijednostPolja = pVrijednost
   ADD(SELF.ErrorQ)
 
 !============================================================================
@@ -383,7 +385,7 @@ bHasStavka BOOL
   CODE
   FREE(SELF.ErrorQ)
   IF RECORDS(SELF.RacunQ) = 0
-    SELF.AddError(0,0,'60',0,'','Nema racuna za validaciju')
+    SELF.AddError(0,0,'60',0,'','Nema racuna za validaciju','')
     RETURN FALSE
   END
   ! Validacija svakog racuna
@@ -405,7 +407,7 @@ bHasStavka BOOL
       END
     END
     IF NOT bHasStavka
-      SELF.AddError(nRacunIdx,0,'60',0,'Stavke','Racun nema niti jednu stavku (slog 61)')
+      SELF.AddError(nRacunIdx,0,'60',0,'Stavke','Racun nema niti jednu stavku (slog 61)','')
       RetVal = FALSE
     END
   END
@@ -431,80 +433,80 @@ sDateB     STRING(8)
   ! --- Polje 2: Sifra isporucitelja (N9, obavezno, K) ---
   sVal = CLIP(SELF.RacunQ.SifraIsporucitelja)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateNumeric(sVal, 9) OR LEN(CLIP(sVal)) <> 9
-    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Mora biti tocno 9 znamenki')
+    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Mora biti tocno 9 znamenki',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.CheckDigitSifraIsporucitelja(sVal)
-    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Neispravna kontrolna znamenka (Prilog 3)')
+    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Neispravna kontrolna znamenka (Prilog 3)',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.RacunQ.SifraIsporucitelja)
-    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,0,'60',2,'SifraIsporucitelja','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 3: Naziv isporucitelja (AN max 45, obavezno) ---
   sVal = CLIP(SELF.RacunQ.NazivIsporucitelja)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',3,'NazivIsporucitelja','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',3,'NazivIsporucitelja','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF LEN(CLIP(sVal)) > 45
-    SELF.AddError(nRacunIdx,0,'60',3,'NazivIsporucitelja','Maksimalno 45 znakova')
+    SELF.AddError(nRacunIdx,0,'60',3,'NazivIsporucitelja','Maksimalno 45 znakova',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.RacunQ.NazivIsporucitelja)
-    SELF.AddError(nRacunIdx,0,'60',3,'NazivIsporucitelja','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,0,'60',3,'NazivIsporucitelja','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 4: Broj ovjerene potvrde (uvjetno) ---
   sVal = CLIP(SELF.RacunQ.BrojOvjerenePotvrde)
   IF sVal <> '' AND SELF.ContainsColon(sVal)
-    SELF.AddError(nRacunIdx,0,'60',4,'BrojOvjerenePotvrde','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,0,'60',4,'BrojOvjerenePotvrde','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 5: Datum obracuna (DD.MM.YYYY, obavezno) ---
   sVal = CLIP(SELF.RacunQ.DatumObracuna)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',5,'DatumObracuna','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',5,'DatumObracuna','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateDate(sVal)
-    SELF.AddError(nRacunIdx,0,'60',5,'DatumObracuna','Neispravan format datuma (DD.MM.YYYY)')
+    SELF.AddError(nRacunIdx,0,'60',5,'DatumObracuna','Neispravan format datuma (DD.MM.YYYY)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 6: Vrsta pomagala (N1, obavezno, 1-5,7,8) ---
   sVal = CLIP(SELF.RacunQ.VrstaPomagala)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',6,'VrstaPomagala','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',6,'VrstaPomagala','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT INRANGE(VAL(sVal),VAL('1'),VAL('8')) |
      OR sVal = '6' OR sVal = '9' OR LEN(CLIP(sVal)) <> 1 OR NOT NUMERIC(sVal)
-    SELF.AddError(nRacunIdx,0,'60',6,'VrstaPomagala','Dozvoljena vrijednost: 1,2,3,4,5,7 ili 8')
+    SELF.AddError(nRacunIdx,0,'60',6,'VrstaPomagala','Dozvoljena vrijednost: 1,2,3,4,5,7 ili 8',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 7: Datum narudzbe (DD.MM.YYYY, obavezno) ---
   sVal = CLIP(SELF.RacunQ.DatumNarudzbe)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',7,'DatumNarudzbe','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',7,'DatumNarudzbe','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateDate(sVal)
-    SELF.AddError(nRacunIdx,0,'60',7,'DatumNarudzbe','Neispravan format datuma (DD.MM.YYYY)')
+    SELF.AddError(nRacunIdx,0,'60',7,'DatumNarudzbe','Neispravan format datuma (DD.MM.YYYY)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 8: Broj racuna dopunsko (ANS max 22, uvjetno) ---
   sVal = CLIP(SELF.RacunQ.BrojRacDopunsko)
   IF sVal <> '' AND LEN(CLIP(sVal)) > 22
-    SELF.AddError(nRacunIdx,0,'60',8,'BrojRacDopunsko','Maksimalno 22 znaka')
+    SELF.AddError(nRacunIdx,0,'60',8,'BrojRacDopunsko','Maksimalno 22 znaka',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.RacunQ.BrojRacDopunsko)
-    SELF.AddError(nRacunIdx,0,'60',8,'BrojRacDopunsko','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,0,'60',8,'BrojRacDopunsko','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
@@ -512,7 +514,7 @@ sDateB     STRING(8)
   sVal = CLIP(SELF.RacunQ.BrojPolice)
   IF sVal <> ''
     IF NOT SELF.ValidateNumeric(sVal, 8) OR LEN(CLIP(sVal)) <> 8
-      SELF.AddError(nRacunIdx,0,'60',9,'BrojPolice','Mora biti tocno 8 znamenki')
+      SELF.AddError(nRacunIdx,0,'60',9,'BrojPolice','Mora biti tocno 8 znamenki',sVal)
       RetVal = FALSE
     END
   END
@@ -520,54 +522,54 @@ sDateB     STRING(8)
   ! --- Polje 10: Ukupni iznos pomagala (N(max9).N2, obavezno) ---
   sVal = CLIP(SELF.RacunQ.UkIznosPomagala)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',10,'UkIznosPomagala','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',10,'UkIznosPomagala','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',10,'UkIznosPomagala','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',10,'UkIznosPomagala','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 11: Iznos sudjelovanja (N(max9).N2, obavezno) ---
   sVal = CLIP(SELF.RacunQ.IznosSudjelovanja)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',11,'IznosSudjelovanja','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',11,'IznosSudjelovanja','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',11,'IznosSudjelovanja','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',11,'IznosSudjelovanja','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 12: Iznos dopunsko s PDV (N(max9).N2, uvjetno) ---
   sVal = CLIP(SELF.RacunQ.IznosDopunskoSPDV)
   IF sVal <> '' AND NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',12,'IznosDopunskoSPDV','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',12,'IznosDopunskoSPDV','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 13: Iznos PDV dopunsko (N(max9).N2, uvjetno) ---
   sVal = CLIP(SELF.RacunQ.IznosPDVDopunsko)
   IF sVal <> '' AND NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',13,'IznosPDVDopunsko','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',13,'IznosPDVDopunsko','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 14: Iznos obvezno s PDV (N(max9).N2, obavezno) ---
   sVal = CLIP(SELF.RacunQ.IznosObveznoSPDV)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',14,'IznosObveznoSPDV','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',14,'IznosObveznoSPDV','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',14,'IznosObveznoSPDV','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',14,'IznosObveznoSPDV','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 15: Iznos PDV obvezno (N(max9).N2, obavezno) ---
   sVal = CLIP(SELF.RacunQ.IznosPDVObvezno)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',15,'IznosPDVObvezno','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',15,'IznosPDVObvezno','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',15,'IznosPDVObvezno','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',15,'IznosPDVObvezno','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
@@ -577,10 +579,10 @@ sDateB     STRING(8)
   IF sVal <> ''
     bHasMBO = TRUE
     IF NOT SELF.ValidateNumeric(sVal, 9) OR LEN(CLIP(sVal)) <> 9
-      SELF.AddError(nRacunIdx,0,'60',18,'MBO','Mora biti tocno 9 znamenki')
+      SELF.AddError(nRacunIdx,0,'60',18,'MBO','Mora biti tocno 9 znamenki',sVal)
       RetVal = FALSE
     ELSIF NOT SELF.CheckDigitMBO(sVal)
-      SELF.AddError(nRacunIdx,0,'60',18,'MBO','Neispravna kontrolna znamenka (Prilog 5)')
+      SELF.AddError(nRacunIdx,0,'60',18,'MBO','Neispravna kontrolna znamenka (Prilog 5)',sVal)
       RetVal = FALSE
     END
   END
@@ -591,7 +593,7 @@ sDateB     STRING(8)
   IF sVal <> ''
     bHasINO = TRUE
     IF LEN(CLIP(sVal)) > 20
-      SELF.AddError(nRacunIdx,0,'60',19,'BrojBolesnickogLista','Maksimalno 20 znakova')
+      SELF.AddError(nRacunIdx,0,'60',19,'BrojBolesnickogLista','Maksimalno 20 znakova',sVal)
       RetVal = FALSE
     END
   END
@@ -600,61 +602,61 @@ sDateB     STRING(8)
   sVal = CLIP(SELF.RacunQ.Drzava)
   IF sVal <> ''
     IF LEN(CLIP(sVal)) <> 3
-      SELF.AddError(nRacunIdx,0,'60',20,'Drzava','Mora biti tocno 3 slova')
+      SELF.AddError(nRacunIdx,0,'60',20,'Drzava','Mora biti tocno 3 slova',sVal)
       RetVal = FALSE
     END
   END
   ! Ako INO, drzava mora biti popunjena
   IF bHasINO AND CLIP(SELF.RacunQ.Drzava) = ''
-    SELF.AddError(nRacunIdx,0,'60',20,'Drzava','Obavezan za INO osiguranike')
+    SELF.AddError(nRacunIdx,0,'60',20,'Drzava','Obavezan za INO osiguranike','')
     RetVal = FALSE
   END
 
   ! --- Polje 22: Uk iznos fakt postupaka HZZO (N(max9).N2, obavezno) ---
   sVal = CLIP(SELF.RacunQ.UkIznosFaktHZZO)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',22,'UkIznosFaktHZZO','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',22,'UkIznosFaktHZZO','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',22,'UkIznosFaktHZZO','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',22,'UkIznosFaktHZZO','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 23: Uk iznos fakt postupaka dopunsko (uvjetno) ---
   sVal = CLIP(SELF.RacunQ.UkIznosFaktDop)
   IF sVal <> '' AND NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',23,'UkIznosFaktDop','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',23,'UkIznosFaktDop','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 24: Broj osobnog racuna (ANS max 22, obavezno) ---
   sVal = CLIP(SELF.RacunQ.BrojOsobnogRacuna)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',24,'BrojOsobnogRacuna','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',24,'BrojOsobnogRacuna','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF LEN(CLIP(sVal)) > 22
-    SELF.AddError(nRacunIdx,0,'60',24,'BrojOsobnogRacuna','Maksimalno 22 znaka')
+    SELF.AddError(nRacunIdx,0,'60',24,'BrojOsobnogRacuna','Maksimalno 22 znaka',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.RacunQ.BrojOsobnogRacuna)
-    SELF.AddError(nRacunIdx,0,'60',24,'BrojOsobnogRacuna','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,0,'60',24,'BrojOsobnogRacuna','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 25: Aktivnost obvezno (N7, obavezno) ---
   sVal = CLIP(SELF.RacunQ.AktivnostObvezno)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',25,'AktivnostObvezno','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',25,'AktivnostObvezno','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateNumeric(sVal, 7)
-    SELF.AddError(nRacunIdx,0,'60',25,'AktivnostObvezno','Mora biti numericki, max 7 znamenki')
+    SELF.AddError(nRacunIdx,0,'60',25,'AktivnostObvezno','Mora biti numericki, max 7 znamenki',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 26: Aktivnost dopunsko (N5, nije obavezno) ---
   sVal = CLIP(SELF.RacunQ.AktivnostDopunsko)
   IF sVal <> '' AND NOT SELF.ValidateNumeric(sVal, 5)
-    SELF.AddError(nRacunIdx,0,'60',26,'AktivnostDopunsko','Mora biti numericki, max 5 znamenki')
+    SELF.AddError(nRacunIdx,0,'60',26,'AktivnostDopunsko','Mora biti numericki, max 5 znamenki',sVal)
     RetVal = FALSE
   END
 
@@ -662,10 +664,10 @@ sDateB     STRING(8)
   sVal = CLIP(SELF.RacunQ.BrojPotvrdeDoktora)
   IF sVal <> ''
     IF LEN(CLIP(sVal)) <> 14
-      SELF.AddError(nRacunIdx,0,'60',27,'BrojPotvrdeDoktora','Mora biti tocno 14 znamenki')
+      SELF.AddError(nRacunIdx,0,'60',27,'BrojPotvrdeDoktora','Mora biti tocno 14 znamenki',sVal)
       RetVal = FALSE
     ELSIF NOT SELF.CheckDigitPotvrdaDoktora(sVal)
-      SELF.AddError(nRacunIdx,0,'60',27,'BrojPotvrdeDoktora','Neispravna kontrolna znamenka (Prilog 8)')
+      SELF.AddError(nRacunIdx,0,'60',27,'BrojPotvrdeDoktora','Neispravna kontrolna znamenka (Prilog 8)',sVal)
       RetVal = FALSE
     END
   END
@@ -673,28 +675,28 @@ sDateB     STRING(8)
   ! --- Polje 28: Identifikator ePotvrde (ANS max 100, uvjetno) ---
   sVal = CLIP(SELF.RacunQ.IdentifikatorEPotvrde)
   IF sVal <> '' AND LEN(CLIP(sVal)) > 100
-    SELF.AddError(nRacunIdx,0,'60',28,'IdentifikatorEPotvrde','Maksimalno 100 znakova')
+    SELF.AddError(nRacunIdx,0,'60',28,'IdentifikatorEPotvrde','Maksimalno 100 znakova',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.RacunQ.IdentifikatorEPotvrde)
-    SELF.AddError(nRacunIdx,0,'60',28,'IdentifikatorEPotvrde','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,0,'60',28,'IdentifikatorEPotvrde','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 29: Datum izdavanja (DD.MM.YYYY, obavezno) ---
   sVal = CLIP(SELF.RacunQ.DatumIzdavanja)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',29,'DatumIzdavanja','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',29,'DatumIzdavanja','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateDate(sVal)
-    SELF.AddError(nRacunIdx,0,'60',29,'DatumIzdavanja','Neispravan format datuma (DD.MM.YYYY)')
+    SELF.AddError(nRacunIdx,0,'60',29,'DatumIzdavanja','Neispravan format datuma (DD.MM.YYYY)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 30: Ukupni iznos razlike u cijeni (nije obavezno) ---
   sVal = CLIP(SELF.RacunQ.UkIznosRazCijene)
   IF sVal <> '' AND NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,0,'60',30,'UkIznosRazCijene','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,0,'60',30,'UkIznosRazCijene','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
@@ -704,10 +706,10 @@ sDateB     STRING(8)
   IF sVal <> ''
     bHasOIB = TRUE
     IF LEN(CLIP(sVal)) <> 11 OR NOT NUMERIC(sVal)
-      SELF.AddError(nRacunIdx,0,'60',31,'OIB','Mora biti tocno 11 znamenki')
+      SELF.AddError(nRacunIdx,0,'60',31,'OIB','Mora biti tocno 11 znamenki',sVal)
       RetVal = FALSE
     ELSIF NOT SELF.CheckDigitOIB(sVal)
-      SELF.AddError(nRacunIdx,0,'60',31,'OIB','Neispravna kontrolna znamenka (ISO 7064)')
+      SELF.AddError(nRacunIdx,0,'60',31,'OIB','Neispravna kontrolna znamenka (ISO 7064)',sVal)
       RetVal = FALSE
     END
   END
@@ -715,17 +717,17 @@ sDateB     STRING(8)
   ! --- Polje 32: Valuta (A3, obavezno, EUR) ---
   sVal = CLIP(SELF.RacunQ.Valuta)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,0,'60',32,'Valuta','Obavezan podatak')
+    SELF.AddError(nRacunIdx,0,'60',32,'Valuta','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF UPPER(sVal) <> 'EUR'
-    SELF.AddError(nRacunIdx,0,'60',32,'Valuta','Valuta mora biti EUR')
+    SELF.AddError(nRacunIdx,0,'60',32,'Valuta','Valuta mora biti EUR',sVal)
     RetVal = FALSE
   END
 
   ! --- Poslovna pravila ---
   ! Identifikacija osigurane osobe: mora biti MBO ili OIB ili (INO polja 19+20)
   IF NOT bHasMBO AND NOT bHasOIB AND NOT bHasINO
-    SELF.AddError(nRacunIdx,0,'60',18,'MBO/OIB/INO','Mora biti upisan MBO (polje 18) ili OIB (polje 31) ili INO podaci (polja 19,20)')
+    SELF.AddError(nRacunIdx,0,'60',18,'MBO/OIB/INO','Mora biti upisan MBO (polje 18) ili OIB (polje 31) ili INO podaci (polja 19,20)','')
     RetVal = FALSE
   END
 
@@ -735,7 +737,7 @@ sDateB     STRING(8)
   IF CLIP(SELF.RacunQ.BrojPotvrdeDoktora) <> ''  THEN bHasPotvrda = TRUE.
   IF CLIP(SELF.RacunQ.IdentifikatorEPotvrde) <> '' THEN bHasPotvrda = TRUE.
   IF NOT bHasPotvrda
-    SELF.AddError(nRacunIdx,0,'60',4,'Potvrda','Mora biti upisan barem jedan: Broj ovjerene potvrde (4), Broj potvrde doktora (27) ili ePotvrda (28)')
+    SELF.AddError(nRacunIdx,0,'60',4,'Potvrda','Mora biti upisan barem jedan: Broj ovjerene potvrde (4), Broj potvrde doktora (27) ili ePotvrda (28)','')
     RetVal = FALSE
   END
 
@@ -746,7 +748,7 @@ sDateB     STRING(8)
       sDateA = SELF.RacunQ.DatumObracuna[7:10] & SELF.RacunQ.DatumObracuna[4:5] & SELF.RacunQ.DatumObracuna[1:2]
       sDateB = SELF.RacunQ.DatumNarudzbe[7:10] & SELF.RacunQ.DatumNarudzbe[4:5] & SELF.RacunQ.DatumNarudzbe[1:2]
       IF sDateA < sDateB
-        SELF.AddError(nRacunIdx,0,'60',5,'DatumObracuna','Datum obracuna mora biti >= datum narudzbe')
+        SELF.AddError(nRacunIdx,0,'60',5,'DatumObracuna','Datum obracuna mora biti >= datum narudzbe','')
         RetVal = FALSE
       END
     END
@@ -758,7 +760,7 @@ sDateB     STRING(8)
       sDateA = SELF.RacunQ.DatumNarudzbe[7:10] & SELF.RacunQ.DatumNarudzbe[4:5] & SELF.RacunQ.DatumNarudzbe[1:2]
       sDateB = SELF.RacunQ.DatumIzdavanja[7:10] & SELF.RacunQ.DatumIzdavanja[4:5] & SELF.RacunQ.DatumIzdavanja[1:2]
       IF sDateA > sDateB
-        SELF.AddError(nRacunIdx,0,'60',7,'DatumNarudzbe','Datum narudzbe mora biti <= datum izdavanja')
+        SELF.AddError(nRacunIdx,0,'60',7,'DatumNarudzbe','Datum narudzbe mora biti <= datum izdavanja','')
         RetVal = FALSE
       END
     END
@@ -782,60 +784,60 @@ bHasPotvrda BOOL
   ! --- Polje 2: Broj ovjerene potvrde (uvjetno) ---
   sVal = CLIP(SELF.StavkaQ.BrojOvjerenePotvrde)
   IF sVal <> '' AND SELF.ContainsColon(sVal)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',2,'BrojOvjerenePotvrde','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',2,'BrojOvjerenePotvrde','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 3: Datum obracuna (DD.MM.YYYY, obavezno) ---
   sVal = CLIP(SELF.StavkaQ.DatumObracuna)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',3,'DatumObracuna','Obavezan podatak')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',3,'DatumObracuna','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateDate(sVal)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',3,'DatumObracuna','Neispravan format datuma (DD.MM.YYYY)')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',3,'DatumObracuna','Neispravan format datuma (DD.MM.YYYY)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 4: Sifra pomagala (obavezno) ---
   sVal = CLIP(SELF.StavkaQ.SifraPomagala)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',4,'SifraPomagala','Obavezan podatak')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',4,'SifraPomagala','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSE
     IF LEN(CLIP(sVal)) <> 7 AND LEN(CLIP(sVal)) <> 12 AND LEN(CLIP(sVal)) <> 13
-      SELF.AddError(nRacunIdx,pStavkaPtr,'61',4,'SifraPomagala','Duljina sifre mora biti 7, 12 ili 13 znakova')
+      SELF.AddError(nRacunIdx,pStavkaPtr,'61',4,'SifraPomagala','Duljina sifre mora biti 7, 12 ili 13 znakova',sVal)
       RetVal = FALSE
     END
   END
   IF SELF.ContainsColon(SELF.StavkaQ.SifraPomagala)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',4,'SifraPomagala','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',4,'SifraPomagala','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 5: Kolicina (N(max5).N2, obavezno) ---
   sVal = CLIP(SELF.StavkaQ.Kolicina)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Obavezan podatak')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Neispravan format kolicine (N.NN)')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Neispravan format kolicine (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 6: Ukupni iznos (N(max9).N2, obavezno) ---
   sVal = CLIP(SELF.StavkaQ.UkupniIznos)
   IF sVal = ''
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',6,'UkupniIznos','Obavezan podatak')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',6,'UkupniIznos','Obavezan podatak',sVal)
     RetVal = FALSE
   ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',6,'UkupniIznos','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',6,'UkupniIznos','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 7: Sifra proizvodjaca (N10, nije obavezno) ---
   sVal = CLIP(SELF.StavkaQ.SifraProizvodjaca)
   IF sVal <> '' AND NOT SELF.ValidateNumeric(sVal, 10)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',7,'SifraProizvodjaca','Mora biti numericki, max 10 znamenki')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',7,'SifraProizvodjaca','Mora biti numericki, max 10 znamenki',sVal)
     RetVal = FALSE
   END
 
@@ -843,10 +845,10 @@ bHasPotvrda BOOL
   sVal = CLIP(SELF.StavkaQ.BrojPotvrdeDoktora)
   IF sVal <> ''
     IF LEN(CLIP(sVal)) <> 14
-      SELF.AddError(nRacunIdx,pStavkaPtr,'61',8,'BrojPotvrdeDoktora','Mora biti tocno 14 znamenki')
+      SELF.AddError(nRacunIdx,pStavkaPtr,'61',8,'BrojPotvrdeDoktora','Mora biti tocno 14 znamenki',sVal)
       RetVal = FALSE
     ELSIF NOT SELF.CheckDigitPotvrdaDoktora(sVal)
-      SELF.AddError(nRacunIdx,pStavkaPtr,'61',8,'BrojPotvrdeDoktora','Neispravna kontrolna znamenka (Prilog 8)')
+      SELF.AddError(nRacunIdx,pStavkaPtr,'61',8,'BrojPotvrdeDoktora','Neispravna kontrolna znamenka (Prilog 8)',sVal)
       RetVal = FALSE
     END
   END
@@ -854,36 +856,36 @@ bHasPotvrda BOOL
   ! --- Polje 9: Sifra velicine obloge (N4, uvjetno) ---
   sVal = CLIP(SELF.StavkaQ.SifraVelicineObloge)
   IF sVal <> '' AND NOT SELF.ValidateNumeric(sVal, 4)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',9,'SifraVelicineObloge','Mora biti numericki, max 4 znamenke')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',9,'SifraVelicineObloge','Mora biti numericki, max 4 znamenke',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 10: Identifikacija izdanog pomagala (ANS max 30) ---
   sVal = CLIP(SELF.StavkaQ.IdentifikacijaPomagala)
   IF sVal <> '' AND LEN(CLIP(sVal)) > 30
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',10,'IdentifikacijaPomagala','Maksimalno 30 znakova')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',10,'IdentifikacijaPomagala','Maksimalno 30 znakova',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.StavkaQ.IdentifikacijaPomagala)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',10,'IdentifikacijaPomagala','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',10,'IdentifikacijaPomagala','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 11: Identifikator ePotvrde (ANS max 100) ---
   sVal = CLIP(SELF.StavkaQ.IdentifikatorEPotvrde)
   IF sVal <> '' AND LEN(CLIP(sVal)) > 100
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',11,'IdentifikatorEPotvrde','Maksimalno 100 znakova')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',11,'IdentifikatorEPotvrde','Maksimalno 100 znakova',sVal)
     RetVal = FALSE
   END
   IF SELF.ContainsColon(SELF.StavkaQ.IdentifikatorEPotvrde)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',11,'IdentifikatorEPotvrde','Sadrzi nedozvoljeni znak dvotocka')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',11,'IdentifikatorEPotvrde','Sadrzi nedozvoljeni znak dvotocka',sVal)
     RetVal = FALSE
   END
 
   ! --- Polje 12: Iznos razlike u cijeni (nije obavezno) ---
   sVal = CLIP(SELF.StavkaQ.IznosRazCijene)
   IF sVal <> '' AND NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',12,'IznosRazCijene','Neispravan format iznosa (N.NN)')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',12,'IznosRazCijene','Neispravan format iznosa (N.NN)',sVal)
     RetVal = FALSE
   END
 
@@ -898,7 +900,7 @@ bHasPotvrda BOOL
   IF CLIP(SELF.RacunQ.BrojPotvrdeDoktora) <> ''  THEN bHasPotvrda = TRUE.
   IF CLIP(SELF.RacunQ.IdentifikatorEPotvrde) <> '' THEN bHasPotvrda = TRUE.
   IF NOT bHasPotvrda
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',2,'Potvrda','Mora biti upisan barem jedan identifikator potvrde')
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',2,'Potvrda','Mora biti upisan barem jedan identifikator potvrde','')
     RetVal = FALSE
   END
 
@@ -991,7 +993,7 @@ csFileName  CSTRING(261)
   csFileName = CLIP(pFileName)
   hFile = kcr_CreateFile(csFileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTR_NORMAL, 0)
   IF hFile = INVALID_HANDLE
-    SELF.AddError(0,0,'',0,'Export','Greska pri kreiranju datoteke: ' & CLIP(pFileName))
+    SELF.AddError(0,0,'',0,'Export','Greska pri kreiranju datoteke: ' & CLIP(pFileName),'')
     RETURN FALSE
   END
   ! Zapisi sve racune i njihove stavke
@@ -1001,7 +1003,7 @@ csFileName  CSTRING(261)
     ! Zapisi slog racuna (60)
     sLine = SELF.FormatRacunLine(I)
     IF NOT WriteLine(hFile, sLine)
-      SELF.AddError(nRacunIdx,0,'60',0,'Export','Greska pri zapisu sloga 60')
+      SELF.AddError(nRacunIdx,0,'60',0,'Export','Greska pri zapisu sloga 60','')
       RetVal = FALSE
       BREAK
     END
@@ -1011,7 +1013,7 @@ csFileName  CSTRING(261)
       IF SELF.StavkaQ.RacunIndex = nRacunIdx
         sLine = SELF.FormatStavkaLine(J)
         IF NOT WriteLine(hFile, sLine)
-          SELF.AddError(nRacunIdx,J,'61',0,'Export','Greska pri zapisu sloga 61')
+          SELF.AddError(nRacunIdx,J,'61',0,'Export','Greska pri zapisu sloga 61','')
           RetVal = FALSE
           BREAK
         END
