@@ -819,8 +819,8 @@ bHasPotvrda BOOL
   IF sVal = ''
     SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Obavezan podatak',sVal)
     RetVal = FALSE
-  ELSIF NOT SELF.ValidateAmount(sVal)
-    SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Neispravan format kolicine (N.NN)',sVal)
+  ELSIF NOT SELF.ValidateAmount(sVal) AND NOT SELF.ValidateNumeric(sVal,5)
+    SELF.AddError(nRacunIdx,pStavkaPtr,'61',5,'Kolicina','Neispravan format kolicine (N.NN ili cijeli broj)',sVal)
     RetVal = FALSE
   END
 
