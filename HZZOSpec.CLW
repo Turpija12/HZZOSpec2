@@ -1081,6 +1081,42 @@ sYYYY STRING(4)
   RETURN sDD & '.' & sMM & '.' & sYYYY
 
 !============================================================================
+! HZZOSpecClass.StrToDate
+!
+! Parsira string formata 'DD.MM.YYYY - HH:MM' i vraca Clarion datum (LONG).
+! Vraca 0 ako su dan, mjesec ili godina 0 (neispravan format).
+!
+! Format: pozicije 1-2=DD, 4-5=MM, 7-10=YYYY
+!============================================================================
+HZZOSpecClass.StrToDate PROCEDURE(STRING pDatumVrijeme)
+l:DD    LONG
+l:MM    LONG
+l:YYYY  LONG
+  CODE
+  l:DD   = DEFORMAT(SUB(pDatumVrijeme, 1, 2), @N02)
+  l:MM   = DEFORMAT(SUB(pDatumVrijeme, 4, 2), @N02)
+  l:YYYY = DEFORMAT(SUB(pDatumVrijeme, 7, 4), @N04)
+  IF l:DD = 0 OR l:MM = 0 OR l:YYYY = 0 THEN RETURN 0.
+  RETURN DATE(l:MM, l:DD, l:YYYY)
+
+!============================================================================
+! HZZOSpecClass.StrToTime
+!
+! Parsira string formata 'DD.MM.YYYY - HH:MM' i vraca Clarion vrijeme (LONG).
+! Clarion vrijeme = centisekunde od ponoci (1 sat = 360000, 1 minuta = 6000).
+! Vraca 0 ako su sati i minute oba 0 ili format nije prepoznat.
+!
+! Format: pozicije 14-15=HH, 17-18=MM
+!============================================================================
+HZZOSpecClass.StrToTime PROCEDURE(STRING pDatumVrijeme)
+l:HH    LONG
+l:MIN   LONG
+  CODE
+  l:HH  = DEFORMAT(SUB(pDatumVrijeme, 14, 2), @N02)
+  l:MIN = DEFORMAT(SUB(pDatumVrijeme, 17, 2), @N02)
+  RETURN l:HH * 360000 + l:MIN * 6000
+
+!============================================================================
 ! HZZOSpecClass.Report
 !
 ! Generira PDF racun za osnovno ili dopunsko zdravstveno osiguranje.

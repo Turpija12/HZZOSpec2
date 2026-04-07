@@ -78,6 +78,8 @@ Export(STRING pFileName) -> BOOL                 ! Validira + pise datoteku
 GenerateFileName(STRING, STRING, LONG, LONG) -> STRING  ! Generira naziv prema spec
 GetErrorCount() -> LONG                         ! Broj gresaka u ErrorQ
 DateToStr(LONG pDate) -> STRING                  ! Clarion datum -> 'DD.MM.YYYY' (0 -> '00.00.0000')
+StrToDate(STRING pDatumVrijeme) -> LONG          ! 'DD.MM.YYYY - HH:MM' -> Clarion datum (0=greska)
+StrToTime(STRING pDatumVrijeme) -> LONG          ! 'DD.MM.YYYY - HH:MM' -> Clarion vrijeme (centisekunde)
 Report(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)  ! Generira PDF racun
                                                 !   pVrsta=1: osnovno ZO, pVrsta=2: dopunsko ZO
                                                 !   pPdfPath='': print preview

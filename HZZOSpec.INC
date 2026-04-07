@@ -110,6 +110,12 @@ GenerateFileName          PROCEDURE(STRING pSifraPodSluzbe,STRING pSifraIsporuci
                             LONG pRedniBroj,LONG pGodina),STRING
 GetErrorCount             PROCEDURE(),LONG
 DateToStr                 PROCEDURE(LONG pDate),STRING
+StrToDate                 PROCEDURE(STRING pDatumVrijeme),LONG
+                          ! Parsira 'DD.MM.YYYY - HH:MM' -> Clarion datum (LONG)
+                          ! Vraca 0 ako format nije ispravan
+StrToTime                 PROCEDURE(STRING pDatumVrijeme),LONG
+                          ! Parsira 'DD.MM.YYYY - HH:MM' -> Clarion vrijeme (LONG, centisekunde)
+                          ! Vraca 0 ako format nije ispravan
 Report                    PROCEDURE(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)
 
 ! --- Privatne metode ---
