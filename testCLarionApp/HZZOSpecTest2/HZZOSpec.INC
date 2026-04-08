@@ -121,6 +121,11 @@ NumToStr                  PROCEDURE(REAL pValue),STRING
                           ! Formatira broj s tocno 2 decimale, bez vodecih razmaka
                           ! npr. 320.2 -> '320.20', 35 -> '35.00', -5.5 -> '-5.50'
 Report                    PROCEDURE(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)
+ReportAll                 PROCEDURE(STRING pPdfPath)
+                          ! Generira sve racune iz RacunQ u jedan PDF.
+                          ! Svaki racun: uvijek osnovno (pVrsta=1), pa dopunsko (pVrsta=2)
+                          ! samo ako TipOsiguranja = HZZO:TipD1.
+                          ! Redoslijed: os1, dop1 (ako D1), os2, dop2 (ako D1), ...
 
 ! --- Privatne metode ---
 ValidateRacun             PROCEDURE(LONG pRacunPtr),BOOL,PRIVATE

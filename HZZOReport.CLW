@@ -32,6 +32,7 @@
                     PROGRAM
 
                     INCLUDE('HZZOSpec.INC'),ONCE
+                    INCLUDE('HZZOCalc.INC'),ONCE
 
                     MAP
                     END
@@ -88,6 +89,7 @@ Spec                HZZOSpecClass
                     Spec.RacunQ.HZZOMjesto                = 'Sibenik'
                     Spec.RacunQ.HZZOUlicaBroj             = 'Fra. Jerolima Milete 12'
                     Spec.RacunQ.HZZOOIB                   = '02958272670'
+                    Spec.RacunQ.TipOsiguranja             = HZZO:TipD1  ! ima dopunsko
                     ADD(Spec.RacunQ)
 
                     !--- StavkaQ ---
@@ -105,8 +107,14 @@ Spec                HZZOSpecClass
                     Spec.StavkaQ.JedRazlikaEur  = '0.0000'
                     ADD(Spec.StavkaQ)
 
-                    !--- Generiraj oba PDF-a ---
+                    !--- Pojedinacni PDF-i po vrsti (jedan racun) ---
                     Spec.Report(1, 1, 'racun_osnovno.pdf')  ! Osnovno zdravstveno osiguranje
                     Spec.Report(1, 2, 'racun_dopunsko.pdf') ! Dopunsko zdravstveno osiguranje
+
+                    !--- Svi racuni u jednom PDF-u ---
+                    ! Loopa kroz sve zapise u RacunQ.
+                    ! Za svaki racun: osnovno (uvijek) + dopunsko (samo ako TipOsiguranja=D1).
+                    ! Redoslijed stranica: os1, dop1, os2, dop2, ...
+                    Spec.ReportAll('svi_racuni.pdf')
 
                     Spec.Kill()

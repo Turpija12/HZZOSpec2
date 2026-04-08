@@ -20,6 +20,7 @@ PrimjerIspravniPodaci   PROCEDURE()
 PrimjerNeispravniPodaci PROCEDURE()
 PrimjerViseRacuna       PROCEDURE()
 PrimjerReport           PROCEDURE()
+PrimjerReportSviRacuni  PROCEDURE()
 PrimjerCalcRacun        PROCEDURE()
 PrikaziGreske           PROCEDURE(HZZOSpecClass pSpec)
 LogOpen                 PROCEDURE(STRING pFileName)
@@ -66,8 +67,13 @@ hLogFile LONG(0)                      ! Handle log datoteke
 
   ! --- Primjer 4: Generiranje PDF racuna (osnovno i dopunsko ZO) ---
   LogWrite('')
-  LogWrite('--- TEST 4: Report - PDF racun ---')
+  LogWrite('--- TEST 4: Report - PDF racun (jedan racun) ---')
   PrimjerReport()
+
+  ! --- Primjer 4b: Svi racuni u jednom PDF-u (ReportAll) ---
+  LogWrite('')
+  LogWrite('--- TEST 4b: ReportAll - svi racuni u jednom PDF-u ---')
+  PrimjerReportSviRacuni()
 
   ! --- Primjer 5: Kalkulator iznosa (HZZOCalcClass) ---
   LogWrite('')
@@ -566,6 +572,138 @@ Spec       HZZOSpecClass
   LogWrite('  Generiranje racun_dopunsko.pdf (pVrsta=2)...')
   Spec.Report(1, 2, '.\racun_dopunsko.pdf')
   LogWrite('  racun_dopunsko.pdf - gotovo')
+
+  LogWrite('  Spec.Kill()')
+  Spec.Kill()
+
+!============================================================================
+! PrimjerReportSviRacuni - Generiranje svih racuna u jedan PDF (ReportAll)
+!
+! Demo s dva racuna:
+!   Racun 1: TipOsiguranja = 'D1' (ima dopunsko) -> 2 stranice: osnovno + dopunsko
+!   Racun 2: TipOsiguranja = 'P1' (nema dopunsko) -> 1 stranica: samo osnovno
+!
+! Rezultat: .\racuni_svi.pdf (3 stranice ukupno)
+!============================================================================
+PrimjerReportSviRacuni PROCEDURE()
+Spec       HZZOSpecClass
+  CODE
+  LogWrite('  Spec.Init()')
+  Spec.Init()
+
+  !--- Racun 1: pacijent ima dopunsko osiguranje (D1) ---
+  !    -> generira se stranica za osnovno + stranica za dopunsko
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex              = 1
+  Spec.RacunQ.SifraIsporucitelja      = '200326791'
+  Spec.RacunQ.NazivIsporucitelja      = 'Karl Dietz Kijevo d.o.o.'
+  Spec.RacunQ.DatumObracuna           = '09.01.2026'
+  Spec.RacunQ.VrstaPomagala           = '1'
+  Spec.RacunQ.DatumNarudzbe           = '05.01.2026'
+  Spec.RacunQ.BrojRacDopunsko         = '7059'
+  Spec.RacunQ.BrojPolice              = '10010474'
+  Spec.RacunQ.UkIznosPomagala         = '244.71'
+  Spec.RacunQ.IznosSudjelovanja       = '48.94'
+  Spec.RacunQ.IznosDopunskoSPDV       = '48.94'
+  Spec.RacunQ.IznosPDVDopunsko        = '2.33'
+  Spec.RacunQ.IznosObveznoSPDV        = '195.77'
+  Spec.RacunQ.IznosPDVObvezno         = '9.32'
+  Spec.RacunQ.MBO                     = '108656533'
+  Spec.RacunQ.UkIznosFaktHZZO         = '195.77'
+  Spec.RacunQ.UkIznosFaktDop          = '48.94'
+  Spec.RacunQ.BrojOsobnogRacuna       = '7006'
+  Spec.RacunQ.AktivnostObvezno        = '0200100'
+  Spec.RacunQ.IdentifikatorEPotvrde   = '36e415e8-3e3c-435c-912b-077f0a0afd86'
+  Spec.RacunQ.DatumIzdavanja          = '09.01.2026'
+  Spec.RacunQ.UkIznosRazCijene        = '0.00'
+  Spec.RacunQ.Valuta                  = 'EUR'
+  Spec.RacunQ.SifraMaloprodajneLokacije = '500154120'
+  Spec.RacunQ.AdresaIsporucitelja       = 'Knin Sinjska cesta 6a'
+  Spec.RacunQ.ZiroRacun                 = 'HR0223600001102278846'
+  Spec.RacunQ.MaticniBroj               = '01220845'
+  Spec.RacunQ.OIBIsporucitelja          = '87198948864'
+  Spec.RacunQ.PozivNaBroj               = '40002-2026'
+  Spec.RacunQ.MjestoIzdavanja           = 'Knin'
+  Spec.RacunQ.HZZOPodrucniUred          = 'HZZO PU Sibenik (083)'
+  Spec.RacunQ.HZZOMjesto                = 'Sibenik'
+  Spec.RacunQ.HZZOUlicaBroj             = 'Fra. Jerolima Milete 12'
+  Spec.RacunQ.HZZOOIB                   = '02958272670'
+  Spec.RacunQ.TipOsiguranja             = HZZO:TipD1  ! ima dopunsko -> osnovno + dopunsko stranica
+  ADD(Spec.RacunQ)
+
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex     = 1
+  Spec.StavkaQ.DatumObracuna  = '09.01.2026'
+  Spec.StavkaQ.SifraPomagala  = '0209031126005'
+  Spec.StavkaQ.Kolicina       = '10.00'
+  Spec.StavkaQ.UkupniIznos    = '244.71'
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.NazivPomagala  = 'Silikonska obloga za rane s dodatkom srebra iznad 75'
+  Spec.StavkaQ.JedCijenaEur   = '23.3056'
+  Spec.StavkaQ.StopaPDV       = '5.00'
+  Spec.StavkaQ.JedRazlikaEur  = '0.0000'
+  ADD(Spec.StavkaQ)
+
+  !--- Racun 2: pacijent nema dopunsko osiguranje (P1) ---
+  !    -> generira se samo stranica za osnovno
+  CLEAR(Spec.RacunQ)
+  Spec.RacunQ.RacunIndex              = 2
+  Spec.RacunQ.SifraIsporucitelja      = '200326791'
+  Spec.RacunQ.NazivIsporucitelja      = 'Karl Dietz Kijevo d.o.o.'
+  Spec.RacunQ.DatumObracuna           = '10.01.2026'
+  Spec.RacunQ.VrstaPomagala           = '1'
+  Spec.RacunQ.DatumNarudzbe           = '08.01.2026'
+  Spec.RacunQ.BrojRacDopunsko         = ''
+  Spec.RacunQ.BrojPolice              = ''
+  Spec.RacunQ.UkIznosPomagala         = '85.00'
+  Spec.RacunQ.IznosSudjelovanja       = '17.00'
+  Spec.RacunQ.IznosDopunskoSPDV       = '0.00'
+  Spec.RacunQ.IznosPDVDopunsko        = '0.00'
+  Spec.RacunQ.IznosObveznoSPDV        = '68.00'
+  Spec.RacunQ.IznosPDVObvezno         = '3.24'
+  Spec.RacunQ.MBO                     = '987654325'
+  Spec.RacunQ.UkIznosFaktHZZO         = '68.00'
+  Spec.RacunQ.UkIznosFaktDop          = '0.00'
+  Spec.RacunQ.BrojOsobnogRacuna       = '7007'
+  Spec.RacunQ.AktivnostObvezno        = '0200100'
+  Spec.RacunQ.IdentifikatorEPotvrde   = 'aa112233-bbcc-4455-ddee-ff6677889900'
+  Spec.RacunQ.DatumIzdavanja          = '10.01.2026'
+  Spec.RacunQ.UkIznosRazCijene        = '0.00'
+  Spec.RacunQ.Valuta                  = 'EUR'
+  Spec.RacunQ.SifraMaloprodajneLokacije = '500154120'
+  Spec.RacunQ.AdresaIsporucitelja       = 'Knin Sinjska cesta 6a'
+  Spec.RacunQ.ZiroRacun                 = 'HR0223600001102278846'
+  Spec.RacunQ.MaticniBroj               = '01220845'
+  Spec.RacunQ.OIBIsporucitelja          = '87198948864'
+  Spec.RacunQ.PozivNaBroj               = '40003-2026'
+  Spec.RacunQ.MjestoIzdavanja           = 'Knin'
+  Spec.RacunQ.HZZOPodrucniUred          = 'HZZO PU Sibenik (083)'
+  Spec.RacunQ.HZZOMjesto                = 'Sibenik'
+  Spec.RacunQ.HZZOUlicaBroj             = 'Fra. Jerolima Milete 12'
+  Spec.RacunQ.HZZOOIB                   = '02958272670'
+  Spec.RacunQ.TipOsiguranja             = HZZO:TipP1  ! nema dopunsko -> samo osnovno stranica
+  ADD(Spec.RacunQ)
+
+  CLEAR(Spec.StavkaQ)
+  Spec.StavkaQ.RacunIndex     = 2
+  Spec.StavkaQ.DatumObracuna  = '10.01.2026'
+  Spec.StavkaQ.SifraPomagala  = '0104120101001'
+  Spec.StavkaQ.Kolicina       = '1.00'
+  Spec.StavkaQ.UkupniIznos    = '85.00'
+  Spec.StavkaQ.IznosRazCijene = '0.00'
+  Spec.StavkaQ.NazivPomagala  = 'Proteza natkoljenicna standardna'
+  Spec.StavkaQ.JedCijenaEur   = '85.0000'
+  Spec.StavkaQ.StopaPDV       = '5.00'
+  Spec.StavkaQ.JedRazlikaEur  = '0.0000'
+  ADD(Spec.StavkaQ)
+
+  !--- Generiraj sve racune u jedan PDF ---
+  ! Racun 1 (D1): stranica 1=osnovno, stranica 2=dopunsko
+  ! Racun 2 (P1): stranica 3=osnovno
+  ! Ukupno: 3 stranice u jednom PDF-u
+  LogWrite('  Generiranje .\racuni_svi.pdf (3 stranice: os1, dop1, os2)...')
+  Spec.ReportAll('.\racuni_svi.pdf')
+  LogWrite('  racuni_svi.pdf - gotovo')
 
   LogWrite('  Spec.Kill()')
   Spec.Kill()
