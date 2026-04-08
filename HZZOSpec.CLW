@@ -1900,7 +1900,7 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                       GET(SELF.RacunQ, rr)
 
                       !--- Koliko vrsta za ovaj racun? ---
-                      IF CLIP(SELF.RacunQ.TipOsiguranja) = HZZO:TipD1
+                      IF CLIP(SELF.RacunQ.TipOsiguranja) = 'D1'
                         lMaxVrsta = 2        ! osnovno + dopunsko
                       ELSE
                         lMaxVrsta = 1        ! samo osnovno
