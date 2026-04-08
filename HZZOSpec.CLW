@@ -1119,6 +1119,30 @@ l:MIN   LONG
   RETURN l:HH * 360000 + l:MIN * 6000
 
 !============================================================================
+! HZZOSpecClass.NumToStr
+!
+! Formatira REAL broj u string s tocno 2 decimale, bez vodecih razmaka.
+! Koristiti za punjenje STRING polja u queue-u (Kolicina, iznosi...).
+!
+! Primjeri:
+!   NumToStr(320.2)  -> '320.20'
+!   NumToStr(35)     -> '35.00'
+!   NumToStr(0)      -> '0.00'
+!   NumToStr(-5.5)   -> '-5.50'
+!============================================================================
+HZZOSpecClass.NumToStr PROCEDURE(REAL pValue)
+l:Buf   STRING(20)
+I       LONG
+  CODE
+  l:Buf = FORMAT(pValue, @n-12.2)
+  LOOP I = 1 TO 20
+    IF l:Buf[I] <> ' '
+      RETURN CLIP(l:Buf[I : 20])
+    END
+  END
+  RETURN '0.00'
+
+!============================================================================
 ! HZZOSpecClass.Report
 !
 ! Generira PDF racun za osnovno ili dopunsko zdravstveno osiguranje.

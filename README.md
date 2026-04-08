@@ -81,6 +81,7 @@ GetErrorCount() -> LONG                         ! Broj gresaka u ErrorQ
 DateToStr(LONG pDate) -> STRING                  ! Clarion datum -> 'DD.MM.YYYY' (0 -> '00.00.0000')
 StrToDate(STRING pDatumVrijeme) -> LONG          ! 'DD.MM.YYYY - HH:MM' -> Clarion datum (0=greska)
 StrToTime(STRING pDatumVrijeme) -> LONG          ! 'DD.MM.YYYY - HH:MM' -> Clarion vrijeme (centisekunde)
+NumToStr(REAL pValue) -> STRING                  ! Broj -> string s tocno 2 decimale (320.2->'320.20', 35->'35.00')
 Report(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)  ! Generira PDF racun
                                                 !   pVrsta=1: osnovno ZO, pVrsta=2: dopunsko ZO
                                                 !   pPdfPath='': print preview

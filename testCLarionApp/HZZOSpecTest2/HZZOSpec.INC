@@ -117,6 +117,9 @@ StrToDate                 PROCEDURE(STRING pDatumVrijeme),LONG
 StrToTime                 PROCEDURE(STRING pDatumVrijeme),LONG
                           ! Parsira 'DD.MM.YYYY - HH:MM' -> Clarion vrijeme (LONG, centisekunde)
                           ! Vraca 0 ako format nije ispravan
+NumToStr                  PROCEDURE(REAL pValue),STRING
+                          ! Formatira broj s tocno 2 decimale, bez vodecih razmaka
+                          ! npr. 320.2 -> '320.20', 35 -> '35.00', -5.5 -> '-5.50'
 Report                    PROCEDURE(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)
 
 ! --- Privatne metode ---
