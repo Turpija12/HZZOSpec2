@@ -85,6 +85,8 @@ NumToStr(REAL pValue) -> STRING                  ! Broj -> string s tocno 2 deci
 Report(LONG pRacunIndex, BYTE pVrsta, STRING pPdfPath)  ! Generira PDF racun
                                                 !   pVrsta=1: osnovno ZO, pVrsta=2: dopunsko ZO
                                                 !   pPdfPath='': print preview
+ReportAll(STRING pPdfPath)                      ! Svi racuni u jedan PDF (vise stranica)
+                                                !   automatski bira osnovno/dopunsko za svaki racun
 ```
 
 ### Pristup queue-ovima

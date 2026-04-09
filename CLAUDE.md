@@ -124,6 +124,37 @@ Return type se deklarira samo jednom — u `.INC` CLASS bloku.
 `REPORT{PROP:OutputFile}` ne postoji u Clarion 11.1EE.
 Za PDF ispis koristiti `SYSTEM{PROP:PrintMode} = 3` prije `OPEN(Report)`.
 
+### PDF pipeline — ispravan redosljed (ReportAll)
+Za tiho snimanje PDF-a bez dialoga koristiti I2PDF/WMF pipeline:
+
+```clarion
+INCLUDE('ABWMFPAR.INC'),ONCE   ! WMFDocumentParser
+INCLUDE('abprI2pdf.inc'),ONCE  ! I2PDFReportGenerator
+INCLUDE('abrppsel.inc'),ONCE   ! Level:Benign equate
+
+lPDFReporter   I2PDFReportGenerator
+lWMFParser     WMFDocumentParser
+lPreviewQueue  PrintPreviewFileQueue
+
+SYSTEM{PROP:PrintMode} = 3           ! PDF pipeline, bez print dialoga
+OPEN(Report)
+Report{PROP:Preview} = lPreviewQueue.Filename  ! NAKON OPEN — runtime auto-puni queue
+! ... print petlja s ENDPAGE ...
+! NIJE CLOSE -- WMF fileovi jos postoje
+lPDFReporter.SetFileName(CLIP(pPdfPath))  ! postavi filename PRIJE AskProperties
+IF lPDFReporter.IReportGenerator.AskProperties(FALSE) = Level:Benign
+    lWMFParser.Init(lPreviewQueue, lPDFReporter.IReportGenerator)
+    lWMFParser.GenerateReport(FALSE)
+END
+CLOSE(Report)   ! NAKON GenerateReport — ovaj brise WMF temp fileove
+```
+
+Ključne zamke:
+- `PROP:Preview` je **write-only** — piše se u report (ne čita)  
+- `PrintMode = 1` ≠ preview mode — to otvara Windows print dialog  
+- `GenerateReport` mora biti **PRIJE `CLOSE`** — CLOSE briše WMF temp fileove
+- `AskProperties(FALSE)` ne prikazuje dialog ako je filename vec postavljen via `SetFileName`
+
 ### Poznate ispravne test vrijednosti
 - MBO `'123456782'` (KZ=2), MBO `'987654325'` (KZ=5)
 - OIB `'12345678903'` (KZ=3)

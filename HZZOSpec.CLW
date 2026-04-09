@@ -4,6 +4,9 @@
 !============================================================================
   MEMBER()
   INCLUDE('HZZOSpec.INC')
+  INCLUDE('ABWMFPAR.INC'),ONCE
+  INCLUDE('abprI2pdf.inc'),ONCE
+  INCLUDE('abrppsel.inc'),ONCE
   MAP
     MODULE('Win32')
       kcr_CreateFile(*CSTRING,LONG,LONG,LONG,LONG,LONG,LONG),LONG,PASCAL,RAW,NAME('CreateFileA')
@@ -1519,9 +1522,6 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
                       SYSTEM{PROP:PrintMode} = 3
                     END
                     OPEN(RacunRpt)
-                    IF CLIP(pPdfPath) <> ''
-                      !RacunRpt{PROP:OutputFile} = CLIP(pPdfPath)  ! PROP:OutputFile nije dostupan u ovoj verziji
-                    END
                     RacunRpt{PROP:Extend} = TRUE
 
                     !--- 7. Sakrij/prikazi elemente ovisno o vrsti ---
@@ -1612,6 +1612,11 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
 !             ukljucujuci report-only polja i TipOsiguranja.
 !============================================================================
 HZZOSpecClass.ReportAll PROCEDURE(STRING pPdfPath)
+
+!--- PDF pipeline ---
+lPDFReporter    I2PDFReportGenerator
+lWMFParser      WMFDocumentParser
+lPreviewQueue   PrintPreviewFileQueue
 
 !--- Header varijable ---
 l:RacunZa           STRING(80)
@@ -1890,10 +1895,13 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
 
                     !--- 1. Otvori report jednom za sve racune ---
                     IF CLIP(pPdfPath) <> ''
-                      SYSTEM{PROP:PrintMode} = 3
+                      SYSTEM{PROP:PrintMode} = 3   ! PDF pipeline - bez print dialoga
                     END
                     OPEN(RacunRpt)
                     RacunRpt{PROP:Extend} = TRUE
+                    IF CLIP(pPdfPath) <> ''
+                      RacunRpt{PROP:Preview} = lPreviewQueue.Filename  ! NAKON OPEN: runtime auto-puni queue za svaku stranicu
+                    END
 
                     !--- 2. Petlja kroz sve racune ---
                     LOOP rr = 1 TO RECORDS(SELF.RacunQ)
@@ -2046,4 +2054,14 @@ detailF               DETAIL,AT(0,0,189,85),USE(?DETAILF)
 
                     END  !LOOP rr
 
+                    !--- Konvertiraj WMF preview u PDF PRIJE CLOSE (WMF temp fileovi jos postoje) ---
+                    IF CLIP(pPdfPath) <> ''
+                      lPDFReporter.SetFileName(CLIP(pPdfPath))   ! postavi filename PRIJE AskProperties
+                      IF lPDFReporter.IReportGenerator.AskProperties(FALSE) = Level:Benign
+                        lWMFParser.Init(lPreviewQueue, lPDFReporter.IReportGenerator)
+                        lWMFParser.GenerateReport(FALSE)
+                      END
+                    END
+
                     CLOSE(RacunRpt)
+
